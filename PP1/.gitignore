@@ -29,4 +29,5 @@ ipython_config.py
 *.vscode
 *README.md
 *.json
+config.json
 
