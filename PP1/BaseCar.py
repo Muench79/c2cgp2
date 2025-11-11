@@ -120,7 +120,7 @@ time.sleep(1)
 x.speed = 0
 '''
 
-@click.command()
+@click.command() # ueberprüfen
 @click.option('--modus', '--m', type=int, default=None, help="Startet Test für Klasse direkt.")
 def main(modus):
     print('-- Waehle eine Fahrmodus aus--')
@@ -166,4 +166,6 @@ class Fmod2():
         FrontWheels.__init__(self, turning_offset)
         self._steering_angle = 0
         self._direction = 0
+
+
 '''
