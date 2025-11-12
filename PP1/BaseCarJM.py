@@ -20,6 +20,19 @@ except:
     forward_A = 0
     forward_B = 0
 
+"""
+class BaseCar():
+    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
+        self._backwheels = BackWheels(forward_A, forward_B, turning_offset)
+        self._frontwheels = FrontWheels(turning_offset)
+
+    @property
+    def speed(self):
+        self._backwheels.
+"""
+
+
+
 
 class BaseCar(BackWheels, FrontWheels):
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
