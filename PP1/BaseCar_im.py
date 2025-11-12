@@ -1,3 +1,4 @@
+from DataStorage import DataStorage
 import click
 import time
 import numpy as np
@@ -41,16 +42,93 @@ except:
     forward_A = 0
     forward_B = 0
 
-# Zuweisung ggf. Ueberarbeiten von Joerg
-'''
+# Klasse BaseCar wird erstellt und ziehen uns die Werte forward_A,B turning_offset 
+# damit erstellen wir zwei Objekt self._backwheels und self._frontwheels und 
+# verbknüpfen diese mit den Parametern forward_A,B und turning_offset
 class BaseCar():
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
         self._backwheels = BackWheels(forward_A, forward_B)
         self._frontwheels = FrontWheels(turning_offset)
-        self._steering_angle = None
-        self._direction = None
+#        self._datastorage = DataStorage()
+        self._steering_angle = None # Selbstdefiniere Variable in der der Lenkwinkel gespeichert wird - Anfangbedingung None weil kein Winkel bekannt
+        self._direction = None # Selbstdefiniere Variable in der der Richtung gespeichert wird - Anfangbedingung None weil kein Richtung bekannt
         print("OK")
-'''        
+    
+#    @property
+#    def storage(self):
+#        return self._datastorage.storage
+    
+#    @storage.setter
+#    def storage(self, x : bool):
+#        self._datastorage.storage = x
+
+    @property
+    def speed(self):
+        return self._backwheels.speed #holt sich die aktuelle Geschw. von der Kl. backwheels und gibt diese zurück
+
+    @speed.setter
+    def speed(self, new_speed : int):
+        if new_speed < 0:
+            self._backwheels.backward()
+            self._direction = -1 #Wenn die geschw. negativ ist dann wird self._direction auf -1 gesetzt für spätere Richtungserkennung sinnvoll
+        else: 
+            self._backwheels.forward()
+            self._direction = 1
+        if new_speed > 100:
+            new_speed = 100
+        elif new_speed < -100:
+            new_speed = -100
+#        self._datastorage.adddata('speed', new_speed)
+        self._backwheels.speed = abs(new_speed) #negative Werte der geschwindigkeit werden pos. gespeichert - Vorbereitung Datastorage
+
+    @property
+    def steering_angle(self):
+        return self._steering_angle #Ausgabe aktueller Lenkwinkel Variable ist selbt gewählt siehe Zeile 53
+    
+    @steering_angle.setter
+    def steering_angle(self, new_steering_angle):
+        self._steering_angle = self._frontwheels.turn(new_steering_angle)
+#        self._datastorage.adddata('steering_angle', new_steering_angle)
+        print(self._steering_angle)
+
+    @property
+    def direction(self):
+        if self._backwheels.speed == 0: #Richtungsrückgabe wenn Geschw. =0 ist die Richtung 0 = stehen
+            return 0
+        else:
+            return self._direction  #Definition in Speed-Setter  
+    
+    def drive(self, new_speed : int = None , new_steering_angle : int = None ):
+        if not (new_speed is None):
+            self.speed = new_speed
+        if not (new_steering_angle is None):
+            self.steering_angle = new_steering_angle
+    
+    def stop(self):
+        self._backwheels.stop()
+        self.steering_angle = 90
+'''
+    def fahrmodus_1(self):
+        self.drive(30, 90)
+        time.sleep(3)
+        self.stop()
+        time.sleep(1)
+        self.drive(-30, 90)
+        time.sleep(3)
+        self.stop()
+
+    def fahrmodus_2(self):
+        self.drive(30, 90)
+        time.sleep(1)
+        self.drive(30, 135)
+        time.sleep(8)
+        self.drive(-30, 135)
+        time.sleep(8)
+        self.drive(-30, 90)
+        time.sleep(1)
+        self.stop()
+'''
+'''
 class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
         BackWheels.__init__(self, forward_A, forward_B)
@@ -89,12 +167,12 @@ class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
 
         self._steering_angle = self.turn(new_steering_angle)
     #    print(self._steering_angle)
-
-    '''
-     Umsetzung der Aufgabe 3.1.3 
+'''
+'''
+    Umsetzung der Aufgabe 3.1.3 
     direction: Rückgabe der aktuelle Fahrrichtung (1: vorwärts, 0: Stillstand, ‑1 Rückwärts)
     (Property ohne Setter)
-    '''
+
     @property           
     def direction(self):
         if self._speed == 0:
@@ -111,6 +189,7 @@ class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
         self.left_wheel.speed = 0
         self.right_wheel.speed = 0
         self.steering_angle = 90
+'''
 
 class SonicCar(BaseCar):
     def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
@@ -129,14 +208,11 @@ class SonicCar(BaseCar):
             time.sleep(.5)   
     def tc_dist(self):
         return self.ultrasonic.distance()
-    
-
-      
+        
 #x = BaseCar(forward_A, forward_B, turning_offset) #Ist die Intanz der Klasse BaseCar
 x = SonicCar(forward_A, forward_B, turning_offset)
+
 x.car_distance()
-
-
 
 print('-- Waehle eine Fahrmodus aus--')
 print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
@@ -162,10 +238,10 @@ if fmod == 2:
     # fahrmodus rechts
     x.drive(20) #
     time.sleep(1)
-    x.drive(20, x._max_angle)  #[self._max_angle]???
+    x.drive(20, x._frontwheels._max_angle )  #[self._max_angle]???
     time.sleep(8)
     x.stop()
-    x.drive(-20, x._max_angle)
+    x.drive(-20, x._frontwheels._max_angle)
     time.sleep(8)
     x.drive(-20)
     time.sleep(1)
@@ -173,25 +249,34 @@ if fmod == 2:
     # fahrmodus links
     x.drive(20) #
     time.sleep(1)
-    x.drive(20, x._min_angle)  #[self._max_angle]???
+    x.drive(20, x._frontwheels._min_angle)  #[self._max_angle]???
     time.sleep(8)
     x.stop()
-    x.drive(-20, x._min_angle)
+    x.drive(-20, x._frontwheels._min_angle)
     time.sleep(8)
     x.drive(-20)
     time.sleep(1)
     x.stop()
+
 if fmod == 3:
-    d = 20
     print('Fahrmodus 3 wird ausgeführt')
-    while  d > 10:
-    #while  x.tc_dist() > 10:
-       x.drive(45, x._straight_angle)
-       d=x.tc_dist()
-       print(d)
-       #print(x.tc_dist())
-    print("Ende", d)   
+    x.drive(45, x._frontwheels._straight_angle)
+    wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
+    w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
+    while True: 
+        d=x.tc_dist() #einlesen der distanz aus der Methode
+        print(d)
+        if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
+            pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
+        elif d < 10: 
+            w=w-1
+            if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
+                break
+        elif d >= 10: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
+            w=wd
+    print("Ende", d)
     x.stop()
+
 if fmod == 4:
     sys.exit()
     #   x._max_angle
