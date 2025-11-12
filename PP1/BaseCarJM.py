@@ -31,6 +31,7 @@ class BaseCar():
         self._steering_angle = None
         self._direction = None
         print("OK")
+    
     @property
     def storage(self):
         return self._datastorage.storage
