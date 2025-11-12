@@ -1,9 +1,11 @@
 from basisklassen import BackWheels, FrontWheels, Ultrasonic, Infrared
+from DataStorage import DataStorage
 from time import sleep
 import time
 import json
 import os
 import sys
+import pprint
 
 try:
     with open("config.json", "r") as f:
@@ -25,9 +27,17 @@ class BaseCar():
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
         self._backwheels = BackWheels(forward_A, forward_B)
         self._frontwheels = FrontWheels(turning_offset)
+        self._datastorage = DataStorage()
         self._steering_angle = None
         self._direction = None
         print("OK")
+    @property
+    def storage(self):
+        return self._datastorage.storage
+    
+    @storage.setter
+    def storage(self, x : bool):
+        self._datastorage.storage = x
 
     @property
     def speed(self):
@@ -41,10 +51,12 @@ class BaseCar():
         elif new_speed >= 0:
             self._backwheels.forward()
             self._direction = 1
-        new_speed = abs(new_speed)
         if new_speed > 100:
             new_speed = 100
-        self._backwheels.speed = new_speed
+        elif new_speed < -100:
+            new_speed = -100
+        self._datastorage.adddata('speed', new_speed)
+        self._backwheels.speed = abs(new_speed)
 
     @property
     def steering_angle(self):
@@ -53,6 +65,7 @@ class BaseCar():
     @steering_angle.setter
     def steering_angle(self, new_steering_angle):
         self._steering_angle = self._frontwheels.turn(new_steering_angle)
+        self._datastorage.adddata('steering_angle', new_steering_angle)
         print(self._steering_angle)
 
     @property
@@ -69,8 +82,8 @@ class BaseCar():
             self.steering_angle = new_steering_angle
     
     def stop(self):
-        self._backwheels.speed = 0
-        self.steering_angle = 90
+        self._backwheels.stop()
+        #self.steering_angle = 90
 
     def fahrmodus_1(self):
         self.drive(30, 90)
@@ -98,8 +111,15 @@ class SonicCar(BaseCar):
         self._ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout)
 
     def get_distance(self):
+        self._datastorage.adddata('distance', self._ultrasonic.distance())
         return self._ultrasonic.distance()
     
+    def getdata(self):
+        return self._datastorage.getdata() 
+    
+    def cleardata(self):
+        self._datastorage.cleardata()
+
     def fahrmodus_3(self):
         self.drive(30, 90)
         while True:
@@ -115,8 +135,11 @@ class SonicCar(BaseCar):
         self.drive(30, 90)
         while True:
             distance = self.get_distance()
-            if distance < 0:
-                break
+            print(distance)
+            if distance < 0 and self.direction == 1:
+                self.drive(-30, 135)
+            elif distance < 10 and self.direction == -1:
+                self.drive(30, 90)
             elif distance < 10:
                 break
             time.sleep(1)
@@ -131,10 +154,13 @@ class SensorCar(SonicCar):
 if __name__ == '__main__':
     
     car = SensorCar(forward_A, forward_B, turning_offset)
-    car.steering_angle = 145
-    
-    sleep(1)
+    car.storage = True
     car.stop()
+    #car.fahrmodus_4()
 
+    sleep(3)
+    car.stop()
+    print(car.getdata())
+    pprint.pprint(car.getdata())
     #car = CarTest(BaseCar(forward_A, forward_B, turning_offset))
 
