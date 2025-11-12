@@ -133,17 +133,17 @@ class SonicCar(BaseCar):
     
     def fahrmodus_4(self):
         self.drive(30, 90)
-        while True:
+        t = time.time()
+        while True and (time.time() - t) < 30:
             distance = self.get_distance()
             print(distance)
-            if distance < 0 and self.direction == 1:
+            if distance in [-3, -4, -2]:
+                pass
+            elif distance < 10 and self.direction == 1:
                 self.drive(-30, 135)
-            elif distance < 10 and self.direction == -1:
+            elif distance > 10 and self.direction == -1:
                 self.drive(30, 90)
-            elif distance < 10:
-                break
-            time.sleep(1)
-        self._basecar.stop()
+            time.sleep(0.5)
 
 class SensorCar(SonicCar):
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
@@ -156,11 +156,10 @@ if __name__ == '__main__':
     car = SensorCar(forward_A, forward_B, turning_offset)
     car.storage = True
     car.stop()
-    #car.fahrmodus_4()
+    car.fahrmodus_4()
 
     sleep(3)
     car.stop()
-    print(car.getdata())
+    #print(car.getdata())
     pprint.pprint(car.getdata())
     #car = CarTest(BaseCar(forward_A, forward_B, turning_offset))
-
