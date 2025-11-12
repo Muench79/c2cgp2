@@ -85,10 +85,10 @@ class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
     
     @steering_angle.setter
     def steering_angle(self, new_steering_angle):
-        print(new_steering_angle)
+    #    print(new_steering_angle)
 
         self._steering_angle = self.turn(new_steering_angle)
-        print(self._steering_angle)
+    #    print(self._steering_angle)
 
     '''
      Umsetzung der Aufgabe 3.1.3 
@@ -112,31 +112,36 @@ class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
         self.right_wheel.speed = 0
         self.steering_angle = 90
 
-class SonicCar(Ultrasonic):
+class SonicCar(BaseCar):
     def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
+       super().__init__(forward_A, forward_B, turning_offset)
        self.ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout)
 
        
     def car_distance(self): 
-        for i in range(10):
-            distance = self.distance()
+        for i in range(5):
+            distance = self.ultrasonic.distance() #Distanz wird aus Berechnung der Basisklasse Ultrasonis Zeile 45ff gebildet. 
             if distance < 0:
                 unit = 'Error'
             else:
                 unit = 'cm'
             print('{} : {} {}'.format(i, distance, unit))
             time.sleep(.5)   
+    def tc_dist(self):
+        return self.ultrasonic.distance()
+    
 
       
-x = BaseCar(forward_A, forward_B, turning_offset) #Ist die Intanz der Klasse BaseCar
-y = SonicCar(preparation_time, impuls_length, timeout)
-y.car_distance()
+#x = BaseCar(forward_A, forward_B, turning_offset) #Ist die Intanz der Klasse BaseCar
+x = SonicCar(forward_A, forward_B, turning_offset)
+x.car_distance()
 
 
-'''
+
 print('-- Waehle eine Fahrmodus aus--')
 print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
 print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg right > Vbw=low 1sec > repeat to left')
+print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp')
 while True:
     try:
         fmod = int(input("Bitte Fahrmodus eingeben: "))
@@ -176,7 +181,19 @@ if fmod == 2:
     x.drive(-20)
     time.sleep(1)
     x.stop()
+if fmod == 3:
+    d = 20
+    print('Fahrmodus 3 wird ausgeführt')
+    while  d > 10:
+    #while  x.tc_dist() > 10:
+       x.drive(45, x._straight_angle)
+       d=x.tc_dist()
+       print(d)
+       #print(x.tc_dist())
+    print("Ende", d)   
+    x.stop()
+if fmod == 4:
+    sys.exit()
     #   x._max_angle
-print(turning_offset)
-print(x._max_angle)
-'''
+#print(turning_offset)
+#print(x._max_angle)
