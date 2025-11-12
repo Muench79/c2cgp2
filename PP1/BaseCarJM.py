@@ -1,4 +1,5 @@
-from basisklassen import BackWheels, FrontWheels, Ultrasonic
+from basisklassen import BackWheels, FrontWheels, Ultrasonic, Infrared
+from time import sleep
 import time
 import json
 import os
@@ -20,47 +21,30 @@ except:
     forward_A = 0
     forward_B = 0
 
-"""
 class BaseCar():
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
-        self._backwheels = BackWheels(forward_A, forward_B, turning_offset)
+        self._backwheels = BackWheels(forward_A, forward_B)
         self._frontwheels = FrontWheels(turning_offset)
+        self._steering_angle = None
+        self._direction = None
+        print("OK")
 
     @property
     def speed(self):
-        self._backwheels.
-"""
+        return self._backwheels.speed
 
-
-
-
-class BaseCar(BackWheels, FrontWheels):
-    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
-        BackWheels.__init__(self, forward_A, forward_B)
-        FrontWheels.__init__(self, turning_offset)
-        self._steering_angle = 0
-        self._direction = 0
-    
-    @property
-    def speed(self):
-        return self._speed
-    
     @speed.setter
     def speed(self, new_speed : int):
         if new_speed < 0:
-            self.right_wheel.backward()
-            self.left_wheel.backward()
+            self._backwheels.backward()
             self._direction = -1
         elif new_speed >= 0:
-            self.left_wheel.forward()
-            self.right_wheel.forward()
+            self._backwheels.forward()
             self._direction = 1
         new_speed = abs(new_speed)
         if new_speed > 100:
             new_speed = 100
-        self._speed = new_speed
-        self.left_wheel.speed = new_speed
-        self.right_wheel.speed = new_speed
+        self._backwheels.speed = new_speed
 
     @property
     def steering_angle(self):
@@ -68,14 +52,12 @@ class BaseCar(BackWheels, FrontWheels):
     
     @steering_angle.setter
     def steering_angle(self, new_steering_angle):
-        print(new_steering_angle)
-
-        self._steering_angle = self.turn(new_steering_angle)
+        self._steering_angle = self._frontwheels.turn(new_steering_angle)
         print(self._steering_angle)
 
     @property
     def direction(self):
-        if self._speed == 0:
+        if self._backwheels.speed == 0:
             return 0
         else:
             return self._direction    
@@ -87,9 +69,7 @@ class BaseCar(BackWheels, FrontWheels):
             self.steering_angle = new_steering_angle
     
     def stop(self):
-        self._speed = 0
-        self.left_wheel.speed = 0
-        self.right_wheel.speed = 0
+        self._backwheels.speed = 0
         self.steering_angle = 90
 
     def fahrmodus_1(self):
@@ -110,22 +90,21 @@ class BaseCar(BackWheels, FrontWheels):
         time.sleep(8)
         self.drive(-30, 90)
         time.sleep(1)
-        self.stop() 
+        self.stop()
 
-class SonicCar(BaseCar, Ultrasonic):
+class SonicCar(BaseCar):
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
-        BaseCar.__init__(self, forward_A, forward_B, turning_offset)
-        Ultrasonic.__init__(self, preparation_time, impuls_length, timeout)
-    
+        super().__init__(forward_A, forward_B, turning_offset)
+        self._ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout)
+
     def get_distance(self):
-        return self.distance()
+        return self._ultrasonic.distance()
     
     def fahrmodus_3(self):
         self.drive(30, 90)
         while True:
             distance = self.get_distance()
             print(distance)
-            
             if distance in [-3, -4, -2]:
                 pass
             elif distance < 10:
@@ -141,15 +120,23 @@ class SonicCar(BaseCar, Ultrasonic):
             elif distance < 10:
                 break
             time.sleep(1)
-        self.stop()
+        self._basecar.stop()
 
-
-
+class SensorCar(SonicCar):
+    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
+        super().__init__(forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout)
+        self._infrared = Infrared(references)
+        print(self._infrared.read_analog())
+    
 if __name__ == '__main__':
     
-    car = SonicCar(forward_A, forward_B, turning_offset)
+    car = SensorCar(forward_A, forward_B, turning_offset)
+    car.steering_angle = 145
+    
+    sleep(1)
     car.stop()
-    car.fahrmodus_3()
+    
     
 
     #car = CarTest(BaseCar(forward_A, forward_B, turning_offset))
+
