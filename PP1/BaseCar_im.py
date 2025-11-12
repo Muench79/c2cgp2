@@ -9,7 +9,7 @@ import os
 import sys
 #
 
-from basisklassen import BackWheels, FrontWheels,PWM
+from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic
 # Liest nur die ausgewählten Basisklassen ein
 #Die basisklassen.py wird nicht editiert
 #Notwendigen Klassen werden importiert und mit einem Hinweis versehen. 
@@ -41,13 +41,23 @@ except:
     forward_A = 0
     forward_B = 0
 
-
+# Zuweisung ggf. Ueberarbeiten von Joerg
+'''
+class BaseCar():
+    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
+        self._backwheels = BackWheels(forward_A, forward_B)
+        self._frontwheels = FrontWheels(turning_offset)
+        self._steering_angle = None
+        self._direction = None
+        print("OK")
+'''        
 class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
         BackWheels.__init__(self, forward_A, forward_B)
         FrontWheels.__init__(self, turning_offset)
         self._steering_angle = 0
         self._direction = 0
+
     @property
     def speed(self):  # Setzen und uebergeben der Geschwindigkeit
         return self._speed
@@ -102,27 +112,28 @@ class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
         self.right_wheel.speed = 0
         self.steering_angle = 90
 
-x = BaseCar(forward_A, forward_B, turning_offset)
-'''
-#sys.exit()
-x.drive(0, 45)
-time.sleep(1)
-x.drive(0, 145)
-time.sleep(1)
-x.stop()
-sys.exit()
-x.steering_angle = 45
-x.speed = 100
-time.sleep(1)
-x.speed = -100
-x.steering_angle = 140
-time.sleep(1)
-x.speed = 0
-'''
-#@click.command() # ueberprüfen
-#@click.option('--modus', '--m', type=int, default=None, help="Startet Test für Klasse direkt.")
+class SonicCar(Ultrasonic):
+    def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
+       self.ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout)
+
+       
+    def car_distance(self): 
+        for i in range(10):
+            distance = self.distance()
+            if distance < 0:
+                unit = 'Error'
+            else:
+                unit = 'cm'
+            print('{} : {} {}'.format(i, distance, unit))
+            time.sleep(.5)   
+
+      
+x = BaseCar(forward_A, forward_B, turning_offset) #Ist die Intanz der Klasse BaseCar
+y = SonicCar(preparation_time, impuls_length, timeout)
+y.car_distance()
 
 
+'''
 print('-- Waehle eine Fahrmodus aus--')
 print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
 print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg right > Vbw=low 1sec > repeat to left')
@@ -134,26 +145,38 @@ while True:
         print("Bitte eine gültige Ganzzahl eingeben.")
                           
 if fmod == 1:
-        print('Fahrmodus 1 wird ausgeführt')
-        x.drive(20, )
-        time.sleep(3)
-        x.drive(-20,)  
-        time.sleep(3)
-        x.stop()
+    print('Fahrmodus 1 wird ausgeführt')
+    x.drive(20)
+    time.sleep(3)
+    x.drive(-20)  # uebergibt nur die Geschwindigkeit
+    time.sleep(3)
+    x.stop()
 
 if fmod == 2:
-        print('Fahrmodus 2 wird ausgeführt')
-        x.drive(20, )
-        time.sleep(1)
-        x.drive(20, 135)  #[self._max_angle]???
-        time.sleep(8)
-        x.stop()
-        x.drive(-20, 135)
-        time.sleep(8)
-        x.stop()
-        x.drive(-20, x._min_angle)  #[self._max_angle]???
-        time.sleep(1)
-        x.stop()
-        x._max_angle
+    print('Fahrmodus 2 wird ausgeführt')
+    # fahrmodus rechts
+    x.drive(20) #
+    time.sleep(1)
+    x.drive(20, x._max_angle)  #[self._max_angle]???
+    time.sleep(8)
+    x.stop()
+    x.drive(-20, x._max_angle)
+    time.sleep(8)
+    x.drive(-20)
+    time.sleep(1)
+    x.stop()
+    # fahrmodus links
+    x.drive(20) #
+    time.sleep(1)
+    x.drive(20, x._min_angle)  #[self._max_angle]???
+    time.sleep(8)
+    x.stop()
+    x.drive(-20, x._min_angle)
+    time.sleep(8)
+    x.drive(-20)
+    time.sleep(1)
+    x.stop()
+    #   x._max_angle
 print(turning_offset)
 print(x._max_angle)
+'''
