@@ -135,8 +135,6 @@ if __name__ == '__main__':
     
     sleep(1)
     car.stop()
-    
-    
 
     #car = CarTest(BaseCar(forward_A, forward_B, turning_offset))
 
