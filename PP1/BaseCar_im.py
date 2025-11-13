@@ -128,69 +128,6 @@ class BaseCar():
         time.sleep(1)
         self.stop()
 '''
-'''
-class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
-    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
-        BackWheels.__init__(self, forward_A, forward_B)
-        FrontWheels.__init__(self, turning_offset)
-        self._steering_angle = 0
-        self._direction = 0
-
-    @property
-    def speed(self):  # Setzen und uebergeben der Geschwindigkeit
-        return self._speed
-    
-    @speed.setter   # uebergabe der neuen Parameter für Geschwidigkeit aus der Methode drive()
-    def speed(self, new_speed : int):
-        if new_speed < 0: # Wenn der Wert kleiner 0 dann Rückwärt 
-            self.right_wheel.backward()
-            self.left_wheel.backward()
-            self._direction = -1 # Variable wird erzeugt wenn Geschw. negative
-        elif new_speed >= 0:
-            self.left_wheel.forward()
-            self.right_wheel.forward()
-            self._direction = 1
-        new_speed = abs(new_speed)
-        if new_speed > 100:
-            new_speed = 100
-        self._speed = new_speed
-        self.left_wheel.speed = new_speed
-        self.right_wheel.speed = new_speed
-
-    @property
-    def steering_angle(self):
-        return self._steering_angle
-    
-    @steering_angle.setter
-    def steering_angle(self, new_steering_angle):
-    #    print(new_steering_angle)
-
-        self._steering_angle = self.turn(new_steering_angle)
-    #    print(self._steering_angle)
-'''
-'''
-    Umsetzung der Aufgabe 3.1.3 
-    direction: Rückgabe der aktuelle Fahrrichtung (1: vorwärts, 0: Stillstand, ‑1 Rückwärts)
-    (Property ohne Setter)
-
-    @property           
-    def direction(self):
-        if self._speed == 0:
-            return 0
-        else:
-            return self._direction    
-    def drive(self, new_speed = None, new_steering_angle = None): #Die Bedienung ist Wahr wenn für den Parmeter ein Wert übergeben wurde (der Wert ist None)
-        if not (new_speed is None):   #Wenn kein Wert übergeben wird findet keine Veraenderung statt
-            self.speed = new_speed
-        if not (new_steering_angle is None):
-            self.steering_angle = new_steering_angle
-    def stop(self):
-        self._speed = 0
-        self.left_wheel.speed = 0
-        self.right_wheel.speed = 0
-        self.steering_angle = 90
-'''
-
 class SonicCar(BaseCar):
     def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
        super().__init__(forward_A, forward_B, turning_offset)
@@ -217,7 +154,9 @@ x.car_distance()
 print('-- Waehle eine Fahrmodus aus--')
 print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
 print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg right > Vbw=low 1sec > repeat to left')
-print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp')
+print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp Vorwärtsfahrt bis Hindernis:')
+print('4: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
+print('5: = Abbruch')
 while True:
     try:
         fmod = int(input("Bitte Fahrmodus eingeben: "))
@@ -276,9 +215,36 @@ if fmod == 3:
             w=wd
     print("Ende", d)
     x.stop()
-
 if fmod == 4:
+    print('Fahrmodus 4 wird ausgeführt')
+    x.drive(45, x._frontwheels._straight_angle)
+    wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
+    w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
+    while True: 
+        d=x.tc_dist() #einlesen der distanz aus der Methode
+        print(d)
+        if d in [-3,-4]: # ignoriert Fehlerfall -3, -2, -4
+            pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
+        elif d >= 10: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
+            w=wd        
+        elif d < 10: 
+            w=w-1
+            if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
+                x.stop()
+                while x.tc_dist() < 10:
+                   time.sleep(2)
+                   x.drive(-25, x._frontwheels._max_angle) 
+                x.stop()
+                time.sleep(2)
+                x.drive(45, x._frontwheels._straight_angle)
+                print("Ende", d)
+              
+if fmod == 5:
+    print('Abbruch')
     sys.exit()
+
+
+   
 
 
     #   x._max_angle
