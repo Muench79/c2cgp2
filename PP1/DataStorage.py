@@ -3,6 +3,7 @@ import json
 import os
 import sys
 import pprint
+import re
 
 class DataStorage():
     def __init__(self, storage : bool = False):
@@ -25,17 +26,14 @@ class DataStorage():
     
     def cleardata(self):
         self._data = {}
+        self._dataprepared = []
     
     def _datapreparation(self):
         self._dataprepared = []
-        print(self._data)
         for k, v in self._data.items():
-            print(k, v)
             for t in v:
-                print(t, v)
                 self._dataprepared.append({"data_key" : k, "data_time" : t[0], "data_measurement_value" : t[1]})
         if len(self._dataprepared) > 1:
-            print("jjj",self._dataprepared)
             self._dataprepared.sort(key = lambda x: x['data_time'])
 
     def _datatocsv(self):
@@ -72,18 +70,14 @@ class DataStorage():
         try:
             with open(path, 'w', encoding = 'utf-8') as csvf:
                 csvf.write(self._datatocsv())
-                print('ich wurde gespeichet')
         except:
             return -1
         return 0
 
-    def savedata(self, path, format = None, overwrite = False):
+    def savedata(self, path, format : str = '' , overwrite : bool = False, renamefile : bool = True):
         p, e = os.path.splitext(path)
-        print(os.path.split(path))
         tmppath = path
-        print('öööööö', p, e)
         if not os.path.isdir(os.path.split(path)[0]):
-            print('Dieser Pfad existiert nicht.')
             return -1
         elif not format:
             if e == '':
@@ -93,7 +87,7 @@ class DataStorage():
             elif e.lower() == '.json':
                 tmppath = path
             else:
-                return 2
+                return -2
         else:
             if format.lower() == 'csv':
                 if e.lower() == '.csv':
@@ -106,13 +100,43 @@ class DataStorage():
                 else:
                     tmppath = path + '.json'
             else:
-                return 2
+                return -2
+        while True:
+            if not overwrite and not os.path.exists(tmppath):
+                if renamefile:
+                    r = re.sub(r'.*?_(?P<counter>[0-9]{1,3})\.(csv|json)', lambda c: f"int(m.group('counter')) + 1", tmppath)
+                    print(r.grouo('counter'))
+                    sys.exit()
+                    """
+                    if len(c) == 1:
+                        p, e = os.path.splitext(tmppath)
+                        tmppath = p + '_000' + e
+                    else:
+                        try:
+                            vc = int(c[len[c - 1]])
+                            if vc > 999:
+                                return -3
+                            else:
+                                vc += 1
+"""
+
+
+                    
+
+
+            
+        
         p, e = os.path.splitext(tmppath)
         if e.lower() == '.csv':
-            x = self._savedatacsv(tmppath)
-            print('Ergebnis', x)
+            if self._savedatacsv(tmppath) < 0:
+                return -4
+            else:
+                return 0
         elif e.lower() == '.json':
-            self._savedatajson(tmppath)
+            if self._savedatajson(tmppath) < 0:
+                return -4
+            else:
+                return 0
         else:
             return -3
         
@@ -133,8 +157,8 @@ x.adddata("FG", 10)
 #x.adddata('FI', 99)
 #x.adddata("FJ", 20)
 #x.adddata("FG", 10)
-x.savedata("./test.json")
-x.savedata("./test.csv")
+print(x.savedata("./test_000.json", overwrite = False))
+print(x.savedata("./test.csv", overwrite = False))
 sys.exit()
 x.storage = True
 x.adddata("FG", 10)
