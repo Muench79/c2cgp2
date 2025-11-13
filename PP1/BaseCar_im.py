@@ -1,4 +1,4 @@
-from DataStorage import DataStorage
+#from DataStorage import DataStorage
 import click
 import time
 import numpy as np
@@ -194,7 +194,7 @@ class BaseCar(BackWheels, FrontWheels): #Klasse initiert mit config.jsaon
 class SonicCar(BaseCar):
     def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
        super().__init__(forward_A, forward_B, turning_offset)
-       self.ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout)
+       self.ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout) #Verbindung zu Ultrasonic aus Basisklassen
 
        
     def car_distance(self): 
@@ -279,6 +279,8 @@ if fmod == 3:
 
 if fmod == 4:
     sys.exit()
+
+
     #   x._max_angle
 #print(turning_offset)
 #print(x._max_angle)
