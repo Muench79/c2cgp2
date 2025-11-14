@@ -32,6 +32,9 @@ class BaseCar():
         self._direction = None
         print("OK")
     
+    def savedata(self, path, format : str = '' , overwrite : bool = False):
+        return self._datastorage.savedata(path, format, overwrite)
+
     @property
     def storage(self):
         return self._datastorage.storage
@@ -112,8 +115,9 @@ class SonicCar(BaseCar):
         self._ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout)
 
     def get_distance(self):
-        self._datastorage.adddata('distance', self._ultrasonic.distance())
-        return self._ultrasonic.distance()
+        distance = self._ultrasonic.distance()
+        self._datastorage.adddata('distance', distance)
+        return distance
     
     def getdata(self):
         return self._datastorage.getdata() 
@@ -156,11 +160,16 @@ if __name__ == '__main__':
     
     car = SensorCar(forward_A, forward_B, turning_offset)
     car.storage = True
+    car.drive(0,90)
     car.stop()
+    sys.exit()
     car.fahrmodus_4()
-
-    sleep(3)
     car.stop()
+    print(car.savedata('./data.csv'))
+    sys.exit()
+    sleep(3)
+    
+
     #print(car.getdata())
     pprint.pprint(car.getdata())
     #car = CarTest(BaseCar(forward_A, forward_B, turning_offset))
