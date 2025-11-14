@@ -10,7 +10,11 @@ import os
 import sys
 import csv
 #
-
+start_zeit = time.time()
+zeitgrenze = 5
+datastorage_list = []
+data2 = []
+datastorageDict = {}
 from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic
 # Liest nur die ausgewählten Basisklassen ein
 #Die basisklassen.py wird nicht editiert
@@ -79,7 +83,7 @@ class BaseCar():
             new_speed = 100
         elif new_speed < -100:
             new_speed = -100
-#        self._datastorage.adddata('speed', new_speed)
+            #self._datastorage.adddata('speed', new_speed)
         self._backwheels.speed = abs(new_speed) #negative Werte der geschwindigkeit werden pos. gespeichert - Vorbereitung Datastorage
 
     @property
@@ -133,7 +137,10 @@ class SonicCar(BaseCar):
     def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
        super().__init__(forward_A, forward_B, turning_offset)
        self.ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout) #Verbindung zu Ultrasonic aus Basisklassen
-
+       self.datastorage_list = [] 
+       self.__datastorage_list = []
+       self.datastorage_list =  self.__datastorage_list
+       
        
     def car_distance(self): 
         for i in range(5):
@@ -146,18 +153,50 @@ class SonicCar(BaseCar):
             time.sleep(.5)   
     def tc_dist(self):
         return self.ultrasonic.distance()
+    def __str__(self): # Rückgabewert von obj.__str__ festlegen
+        return f"Messdaten: speed {self.speed}, steering_angle {self.steering_angle}, direction {self.direction}, distance {self.ultrasonic}"
+    def addJourneyEintrag(self, speed, steering_angel, direction, ultrasonic):
+        print(speed, speed, steering_angel, direction, ultrasonic)
+        self.__datastorage.append(Journey(speed, steering_angel, direction, ultrasonic))
+        
+class Journey:
+    def __init__(self, speed, steering_angle, direction, distance):
+    #    self.datum = datetime.strptime(datum, '%d.%m.%Y')
+        self.speed = speed
+        self.steering_angle = steering_angle
+        self.direction = direction
+        self.ultrasonic = distance
+        
 
+#timestamp,speed,steering_angle,direction,distance
 # Datenaufzeichnung und Speicherung   
-
-class datastorage():
-    def __init__(self): 
-        self.data=[] 
-        header = ['timestamp','speed','steering_angle','direction','distance']
+x = SonicCar(forward_A, forward_B, turning_offset)
+x.car_distance()
+class datastorage(SonicCar):
+    def __init__(self, speed, steering_angle, direction, ultrasonic): 
+        super().__init__(speed,steering_angle, direction,ultrasonic)
+        self.data2=[]
+        header = ['speed','steering_angle','direction','distance']
         with open('fahrdaten_1.csv', 'w', newline='', encoding='utf-8') as datei:
             writer = csv.writer(datei, delimiter=',')
             writer.writerow(header)
-s=datastorage() # Objekt muss für die Classe Datastorage erschaffen werden
 
+#        datastorage = [{ x.speed , x.steering_angle, x.direction, x.ultrasonic}]
+    def add(self, speed, steering_angel, direction, ultrasonic):
+        self.data2.append({"speed":speed, "steering_angel":steering_angel, "direction":direction, "ultrasonic":ultrasonic})
+        with open('fahrdaten_1.csv', 'a', newline='', encoding='utf-8') as datei:
+            writer = csv.writer(datei, delimiter=',')
+            writer.writerow([speed, steering_angel, direction, ultrasonic],)
+s=datastorage(x.speed , x.steering_angle, x.direction, x.ultrasonic)    
+
+
+
+ #           for row in csvDaten:
+ #               datum, startort, zielort, kilometer_start, kilometer_ende, zweck, privatfahrt = row
+ #               fzg.addJourneyEintrag(datum, startort, zielort, kilometer_start, kilometer_ende, zweck, privatfahrt)
+ # Objekt muss für die Classe Datastorage erschaffen werden
+#s.add()
+#print(s)
         
         
 '''    
@@ -168,8 +207,6 @@ s=datastorage() # Objekt muss für die Classe Datastorage erschaffen werden
 '''
    
 #x = BaseCar(forward_A, forward_B, turning_offset) #Ist die Intanz der Klasse BaseCar
-x = SonicCar(forward_A, forward_B, turning_offset)
-x.car_distance()
 
 print('-- Waehle eine Fahrmodus aus--')
 print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
@@ -186,9 +223,10 @@ while True:
                           
 if fmod == 1:
     print('Fahrmodus 1 wird ausgeführt')
-    x.drive(20)
+    x.drive(25)
+    s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
     time.sleep(3)
-    x.drive(-20)  # uebergibt nur die Geschwindigkeit
+    x.drive(-25)  # uebergibt nur die Geschwindigkeit
     time.sleep(3)
     x.stop()
 
@@ -235,9 +273,12 @@ if fmod == 3:
             w=wd
     print("Ende", d)
     x.stop()
+
 if fmod == 4:
+    start_zeit = time.time()
     print('Fahrmodus 4 wird ausgeführt')
     x.drive(45, x._frontwheels._straight_angle)
+    s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
     wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
     w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
     while True: 
@@ -263,7 +304,11 @@ if fmod == 4:
                 time.sleep(2)
                 x.drive(45, x._frontwheels._straight_angle)
                 print("Ende", d)
-              
+        if time.time() - start_zeit >=zeitgrenze:
+            x.stop()
+            print("Exit")
+            break
+               
 if fmod == 5:
     print('Abbruch')
     sys.exit()

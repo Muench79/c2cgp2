@@ -1,1 +1,2 @@
-timestamp,speed,steering_angle,direction,distance
+speed,steering_angle,direction,distance
+25,,1,<basisklassen.Ultrasonic object at 0xb606d8b0>
