@@ -6,6 +6,9 @@ import pprint
 import re
 
 class DataStorage():
+
+    __fileext = ('.csv', '.json')
+
     def __init__(self, storage : bool = False):
         self._data = {}
         self._dataprepared = []
@@ -74,72 +77,67 @@ class DataStorage():
             return -1
         return 0
 
-    def savedata(self, path, format : str = '' , overwrite : bool = False, renamefile : bool = True):
-        p, e = os.path.splitext(path)
-        tmppath = path
-        if not os.path.isdir(os.path.split(path)[0]):
-            return -1
-        elif not format:
-            if e == '':
-                tmppath = path + '.csv'
-            elif e.lower() == '.csv':
-                tmppath = path
-            elif e.lower() == '.json':
-                tmppath = path
+    def savedata(self, path, format : str = '' , overwrite : bool = False):
+        folder = os.path.dirname(path)
+        filename = os.path.basename(path)
+        name, ext = os.path.splitext(filename)
+        ext2 = ''
+
+        if not os.path.isdir(folder):
+            return -1 # Verzeichnis ist nicht vorhanden
+        elif not format: 
+            # es ist kein Dateiformat vorgegeben
+            if ext == '':
+                # ?-File -> .csv
+                ext2 = self.__fileext[0]
+            elif ext.lower() == self.__fileext[0]:
+                # csv-File -> .csv
+                ext2 = self.__fileext[0]
+            elif ext.lower() == self.__fileext[1]:
+                # json-File -> .json
+                ext2 = self.__fileext[1]
             else:
-                return -2
+                return -2 # Das Dateiformat wird nicht unterstützt
         else:
-            if format.lower() == 'csv':
-                if e.lower() == '.csv':
-                    tmppath = path
-                else:
-                    tmppath = path + '.csv'
-            elif format.lower() == 'json':
-                if e.lower() == '.json':
-                    tmppath = path
-                else:
-                    tmppath = path + '.json'
+            # Dateiformat ist vorgegeben
+            if format.lower() == self.__fileext[0]:
+                # csv-File -> .csv
+                ext2 = self.__fileext[0]
+            elif format.lower() == self.__fileext[1]:
+                # json-File
+                ext2 = self.__fileext[1]
             else:
-                return -2
-        while True:
-            if not overwrite and not os.path.exists(tmppath):
-                if renamefile:
-                    r = re.sub(r'.*?_(?P<counter>[0-9]{1,3})\.(csv|json)', lambda c: f"int(m.group('counter')) + 1", tmppath)
-                    print(r.grouo('counter'))
-                    sys.exit()
-                    """
-                    if len(c) == 1:
-                        p, e = os.path.splitext(tmppath)
-                        tmppath = p + '_000' + e
-                    else:
-                        try:
-                            vc = int(c[len[c - 1]])
-                            if vc > 999:
-                                return -3
-                            else:
-                                vc += 1
-"""
+                return -2 # Das Dateiformat wird nicht unterstützt
 
+        print(folder)
+        print(filename)
+        print(name, ext)
 
-                    
+        print(folder + '\\' + filename, os.path.exists(os.path.join(folder, filename)))
 
-
-            
-        
-        p, e = os.path.splitext(tmppath)
-        if e.lower() == '.csv':
-            if self._savedatacsv(tmppath) < 0:
-                return -4
-            else:
-                return 0
-        elif e.lower() == '.json':
-            if self._savedatajson(tmppath) < 0:
-                return -4
-            else:
-                return 0
+        timestamp = ''
+        counterstr = ''
+        counter = 0
+        if not overwrite:
+            # Zeitstempel an Dateiname anhängen
+            timestamp = time.strftime("_%Y-%m-%d_%H-%M-%S")
+            while os.path.exists(os.path.join(folder,name + timestamp + counterstr + ext2)) and counter < 10000:
+                counterstr = f'_{counter:04}'
+                counter += 1
+            if counter > 9999:
+                return -3 # Datei ist shon verhanden
+        print("TTTT", folder + '\n' + filename + '\n' + timestamp + '\n' +counterstr + '\n' + ext2)
+        if ext2 == self.__fileext[0]:
+            r = self._savedatacsv(os.path.join(folder,name + timestamp + counterstr + ext2))
+            if r < 0:
+                return -4 # Fehler beim Schreiben der Datei afgetreten
+        elif ext2 == self.__fileext[1]:
+            r = self._savedatajson(os.path.join(folder,name + timestamp + counterstr + ext2))
+            if r < 0:
+                return -4 # Fehler beim Schreiben der Datei afgetreten
         else:
-            return -3
-        
+            return -5 # sollte eigentlich nicht vorkommen
+
     @property
     def storage(self):
         return self._storage
@@ -151,14 +149,14 @@ class DataStorage():
 x = DataStorage()
 x.storage = True
 x.adddata("FG", 10)
-#x.adddata("FG", 10)
+x.adddata("FG", 10)
 #x.adddata('FH', 99)
 #x.adddata("FG", 20)
 #x.adddata('FI', 99)
 #x.adddata("FJ", 20)
 #x.adddata("FG", 10)
-print(x.savedata("./test_000.json", overwrite = False))
-print(x.savedata("./test.csv", overwrite = False))
+print(x.savedata("./test1.csv", overwrite = False))
+print(x.savedata("./test.json", overwrite = True))
 sys.exit()
 x.storage = True
 x.adddata("FG", 10)
