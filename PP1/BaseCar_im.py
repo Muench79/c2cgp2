@@ -8,6 +8,7 @@ import smbus
 import json
 import os
 import sys
+import csv
 #
 
 from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic
@@ -145,10 +146,29 @@ class SonicCar(BaseCar):
             time.sleep(.5)   
     def tc_dist(self):
         return self.ultrasonic.distance()
+
+# Datenaufzeichnung und Speicherung   
+
+class datastorage():
+    def __init__(self): 
+        self.data=[] 
+        header = ['timestamp','speed','steering_angle','direction','distance']
+        with open('fahrdaten_1.csv', 'w', newline='', encoding='utf-8') as datei:
+            writer = csv.writer(datei, delimiter=',')
+            writer.writerow(header)
+s=datastorage() # Objekt muss für die Classe Datastorage erschaffen werden
+
         
+        
+'''    
+        with open(f"fahrdaten_1.csv", "w", encoding="utf-8") as file:
+        file.write() 
+        # Kopfzeile schreiben
+        writer.writerow(header)
+'''
+   
 #x = BaseCar(forward_A, forward_B, turning_offset) #Ist die Intanz der Klasse BaseCar
 x = SonicCar(forward_A, forward_B, turning_offset)
-
 x.car_distance()
 
 print('-- Waehle eine Fahrmodus aus--')
@@ -221,13 +241,18 @@ if fmod == 4:
     wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
     w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
     while True: 
+        # Möglichkeit Schleife zu beenden
         d=x.tc_dist() #einlesen der distanz aus der Methode
         print(d)
-        if d in [-3,-4]: # ignoriert Fehlerfall -3, -2, -4
+        if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
             pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
-        elif d >= 10: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
+        elif d >= 15: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
+            x.drive(45, x._frontwheels._straight_angle)
             w=wd        
-        elif d < 10: 
+        elif d in range(8, 15):
+ #           w=wd
+            x.drive(20, x._frontwheels._straight_angle)
+        elif d < 8: 
             w=w-1
             if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
                 x.stop()
@@ -243,10 +268,21 @@ if fmod == 5:
     print('Abbruch')
     sys.exit()
 
-
+while True:
+    try:
+        fmod = int(input("Für Abbruch Bitte die 5: "))
+        break
+    except ValueError:
+        print("Bitte eine gültige Ganzzahl eingeben.")
    
 
 
-    #   x._max_angle
+
+    
+
+
+
+
+   #   x._max_angle
 #print(turning_offset)
 #print(x._max_angle)
