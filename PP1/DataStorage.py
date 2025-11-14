@@ -1,13 +1,10 @@
 import time
 import json
 import os
-import sys
-import pprint
-import re
 
 class DataStorage():
 
-    __fileext = ('.csv', '.json')
+    __fileext = ('.csv', '.json') # unterstützte Dateiformate
 
     def __init__(self, storage : bool = False):
         self._data = {}
@@ -108,13 +105,7 @@ class DataStorage():
                 ext2 = self.__fileext[1]
             else:
                 return -2 # Das Dateiformat wird nicht unterstützt
-
-        print(folder)
-        print(filename)
-        print(name, ext)
-
-        print(folder + '\\' + filename, os.path.exists(os.path.join(folder, filename)))
-
+            
         timestamp = ''
         counterstr = ''
         counter = 0
@@ -126,7 +117,6 @@ class DataStorage():
                 counter += 1
             if counter > 9999:
                 return -3 # Datei ist shon verhanden
-        print("TTTT", folder + '\n' + filename + '\n' + timestamp + '\n' +counterstr + '\n' + ext2)
         if ext2 == self.__fileext[0]:
             r = self._savedatacsv(os.path.join(folder,name + timestamp + counterstr + ext2))
             if r < 0:
@@ -146,25 +136,5 @@ class DataStorage():
     def storage(self, x : bool):
         self._storage = x
 
-x = DataStorage()
-x.storage = True
-x.adddata("FG", 10)
-x.adddata("FG", 10)
-#x.adddata('FH', 99)
-#x.adddata("FG", 20)
-#x.adddata('FI', 99)
-#x.adddata("FJ", 20)
-#x.adddata("FG", 10)
-print(x.savedata("./test1.csv", overwrite = False))
-print(x.savedata("./test.json", overwrite = True))
-sys.exit()
-x.storage = True
-x.adddata("FG", 10)
-x.adddata('FH', 99)
-x.adddata("FG", 20)
-x.adddata('FI', 99)
-x.adddata("FJ", 20)
-
-print(x.getdata())
-print(x.getkeys())
-#x.savedata("./test.json")
+if __name__ == '__main__':
+    pass
