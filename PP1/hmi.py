@@ -21,7 +21,8 @@ plt.ylabel("Geschwindigkeit")
 plt.title("Treppenförmiges Diagramm")
 plt.grid(True)
 plt.show()
-
+d = {}
+print('gggggggg', type(d))
 #x = plt.step(x=df["time"], y=df["speed"], where="post")
 
 #x = df_speed.step(x = 'time', y = 'speed')
