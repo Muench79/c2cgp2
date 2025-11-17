@@ -59,7 +59,7 @@ class BaseCar():
             new_speed = 100
         elif new_speed < -100:
             new_speed = -100
-        self._datastorage.adddata('speed', new_speed)
+        self._datastorage.add_data('speed', new_speed)
         self._backwheels.speed = abs(new_speed)
 
     @property
@@ -69,7 +69,7 @@ class BaseCar():
     @steering_angle.setter
     def steering_angle(self, new_steering_angle):
         self._steering_angle = self._frontwheels.turn(new_steering_angle)
-        self._datastorage.adddata('steering_angle', new_steering_angle)
+        self._datastorage.add_data('steering_angle', new_steering_angle)
         print(self._steering_angle)
 
     @property
@@ -116,7 +116,7 @@ class SonicCar(BaseCar):
 
     def get_distance(self):
         distance = self._ultrasonic.distance()
-        self._datastorage.adddata('distance', distance)
+        self._datastorage.add_data('distance', distance)
         return distance
     
     def getdata(self):
