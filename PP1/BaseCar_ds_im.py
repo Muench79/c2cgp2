@@ -12,11 +12,11 @@ import sys
 import csv
 #
 start_zeit = time.time()
-zeitgrenze = 35
+zeitgrenze = 10
 #datastorage_list = []
 ##data2 = []
 #datastorageDict = {}
-from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic
+from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic, Infrared
 # Liest nur die ausgewählten Basisklassen ein
 #Die basisklassen.py wird nicht editiert
 #Notwendigen Klassen werden importiert und mit einem Hinweis versehen. 
@@ -151,11 +151,23 @@ class SonicCar(BaseCar):
     def tc_dist(self):
         return self.ultrasonic.distance()
     
-
+class SensorCar(SonicCar):
+    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
+        super().__init__(forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout)
+        self.infra_ref = Infrared(references)
+#        print(self.infra_ref)
+        
+    
+    def infra(self):
+        return self.infra_ref.read_analog()
+        print('{} : {}'.format(self.infra_ref))
+    
+        
 
 #timestamp,speed,steering_angle,direction,distance
 # Datenaufzeichnung und Speicherung   
-x = SonicCar(forward_A, forward_B, turning_offset)
+#x = SonicCar(forward_A, forward_B, turning_offset)
+x = SensorCar(forward_A, forward_B, turning_offset)
 x.car_distance()
 s=data_storage()
 #data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[]}
@@ -189,7 +201,7 @@ print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
 print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg right > Vbw=low 1sec > repeat to left')
 print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp Vorwärtsfahrt bis Hindernis:')
 print('4: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
-print('5: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
+print('5: = Fmod5: Vfw = IR Test')
 print('6: = Abbruch')
 while True:
     try:
@@ -305,8 +317,22 @@ if fmod == 4:
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
             print("Exit")
             break
-    x._data_storage.save_log()           
+    x._data_storage.save_log()  
+
+
 if fmod == 5:
+    print('Fahrmodus 5 wird ausgeführt')
+    print(ir.infra())
+    ir.drive(25, x._frontwheels._straight_angle)
+    ir._data_storage.add_data(ir.speed, ir.steering_angle, ir.direction, x.tc_dist())
+    time.sleep(3)
+    ir.drive(-25, x._frontwheels._straight_angle)  # uebergibt nur die Geschwindigkeit
+    ir._data_storage.add_data(ir.speed, ir.steering_angle, ir.direction, x.tc_dist())
+    time.sleep(3)
+    ir.stop()
+    ir._data_storage.save_log()
+
+if fmod == 6:
     print('Abbruch')
     sys.exit()
 
