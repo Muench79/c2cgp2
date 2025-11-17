@@ -7,7 +7,7 @@ ultrasonic = 100
 timestamp = 10
 
 
-data_storage = {"timestamp":[],"speed":[], "dirction": [], "steering_angle":[], "ultrasonic":[]}
+data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[]}
 daten_log = {}
 
 df = pd.Dataframe(data_storage)
