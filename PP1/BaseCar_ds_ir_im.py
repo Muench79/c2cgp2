@@ -51,9 +51,10 @@ except:
 # Klasse BaseCar wird erstellt und ziehen uns die Werte forward_A,B turning_offset 
 # damit erstellen wir zwei Objekt self._backwheels und self._frontwheels und 
 # verbknüpfen diese mit den Parametern forward_A,B und turning_offset
-class cali_ref (Infrared):
-    def cali_test(self):
-        Infrared.cali_references(self)
+#class cali_ref (Infrared):
+#    def cali_test(self):
+#        Infrared.cali_references(self)
+#        return Infrared.cali_references
 class data_storage():
     def __init__(self): # self wichtig um aus der Klasse ein Objekt machen mit eigener speicherung 
         self.data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[]}
@@ -157,20 +158,32 @@ class SensorCar(SonicCar):
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
         super().__init__(forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout)
         self.infra_ref = Infrared(references)
+#        self.new_ref = Infrared.set_references()
 
     def array(self):
         print('{} : {}'.format(self.infra_ref.read_analog()))
         return self.infra_ref.read_analog()
     
+    def cali_test(self):
+        self.infra_ref.cali_references()
+
     def digital(self) -> list:
         """Reads the value of the infrared module as digital.
 
         Returns:
             [list]: List of digitized measurement of the sensors using the reference as threshold.
         """
+
         new_analog = np.array(self.infra_ref.read_analog())
         new_digital = np.where(new_analog < self.infra_ref._references, 1, 0)
-        return list(new_digital)
+        #new_digital = np.where(new_analog < self.infra_ref.set_references(ref=()), 1, 0)
+        print(f"{new_analog} na class_digital")
+        print(list(new_digital))
+        print(f"{new_digital} nd_class_digital")
+        print(f"{new_analog < self.infra_ref._references} na-ref class_digital")
+        print(new_digital[0])
+        return list(new_digital) #Return übergibt ausgabe Wert der MEthode. Dieser kann dann durch den aufruf x.digial usw abgefragt werden
+    
 
 
 
@@ -191,7 +204,7 @@ class SensorCar(SonicCar):
 x = SensorCar(forward_A, forward_B, turning_offset)
 x.car_distance()
 s=data_storage()
-c=cali_ref()
+#c=cali_ref()
 #data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[]}
 
 #df = pd.Dataframe(data_storage)
@@ -343,10 +356,13 @@ if fmod == 4:
 
 
 if fmod == 5:
-    c.cali_test()
+    x.cali_test()
+    time.sleep(3)
     print('Fahrmodus 5 wird ausgeführt')
     print(x.infra_ref.read_digital())
     print(x.digital())
+    print(x.digital()[0])
+    #print()
     x.drive(25, x._frontwheels._straight_angle)
     x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(3)
@@ -355,6 +371,7 @@ if fmod == 5:
     time.sleep(3)
     x.stop()
     x._data_storage.save_log()
+
 
 if fmod == 6:
     print('Abbruch')
