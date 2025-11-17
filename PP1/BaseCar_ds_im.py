@@ -12,7 +12,7 @@ import sys
 import csv
 #
 start_zeit = time.time()
-zeitgrenze = 15
+zeitgrenze = 35
 #datastorage_list = []
 ##data2 = []
 #datastorageDict = {}
@@ -189,7 +189,8 @@ print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
 print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg right > Vbw=low 1sec > repeat to left')
 print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp Vorwärtsfahrt bis Hindernis:')
 print('4: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
-print('5: = Abbruch')
+print('5: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
+print('6: = Abbruch')
 while True:
     try:
         fmod = int(input("Bitte Fahrmodus eingeben: "))
@@ -212,31 +213,41 @@ if fmod == 1:
 if fmod == 2:
     print('Fahrmodus 2 wird ausgeführt')
     # fahrmodus rechts
-    x.drive(20) #
+    x.drive(20, x._frontwheels._straight_angle) #
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(1)
     x.drive(20, x._frontwheels._max_angle )  #[self._max_angle]???
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(8)
     x.stop()
     x.drive(-20, x._frontwheels._max_angle)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(8)
-    x.drive(-20)
+    x.drive(-20, x._frontwheels._straight_angle)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(1)
     x.stop()
     # fahrmodus links
-    x.drive(20) #
+    x.drive(20, x._frontwheels._straight_angle) #
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(1)
     x.drive(20, x._frontwheels._min_angle)  #[self._max_angle]???
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(8)
     x.stop()
     x.drive(-20, x._frontwheels._min_angle)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(8)
-    x.drive(-20)
+    x.drive(-20, x._frontwheels._straight_angle)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(1)
     x.stop()
+    x._data_storage.save_log()
 
 if fmod == 3:
     print('Fahrmodus 3 wird ausgeführt')
     x.drive(45, x._frontwheels._straight_angle)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
     w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
     while True: 
@@ -252,6 +263,7 @@ if fmod == 3:
             w=wd
     print("Ende", d)
     x.stop()
+    x._data_storage.save_log()
 
 if fmod == 4:
     start_zeit = time.time()
