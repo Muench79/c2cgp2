@@ -51,7 +51,9 @@ except:
 # Klasse BaseCar wird erstellt und ziehen uns die Werte forward_A,B turning_offset 
 # damit erstellen wir zwei Objekt self._backwheels und self._frontwheels und 
 # verbknüpfen diese mit den Parametern forward_A,B und turning_offset
-
+class cali_ref (Infrared):
+    def cali_test(self):
+        Infrared.cali_references(self)
 class data_storage():
     def __init__(self): # self wichtig um aus der Klasse ein Objekt machen mit eigener speicherung 
         self.data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[]}
@@ -155,13 +157,32 @@ class SensorCar(SonicCar):
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
         super().__init__(forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout)
         self.infra_ref = Infrared(references)
-#        print(self.infra_ref)
-        
+
+    def array(self):
+        print('{} : {}'.format(self.infra_ref.read_analog()))
+        return self.infra_ref.read_analog()
     
+    def digital(self) -> list:
+        """Reads the value of the infrared module as digital.
+
+        Returns:
+            [list]: List of digitized measurement of the sensors using the reference as threshold.
+        """
+        new_analog = np.array(self.infra_ref.read_analog())
+        new_digital = np.where(new_analog < self.infra_ref._references, 1, 0)
+        return list(new_digital)
+
+
+
+
+
+
+'''
     def infra(self):
+        
         return self.infra_ref.read_analog()
         print('{} : {}'.format(self.infra_ref))
-    
+'''   
         
 
 #timestamp,speed,steering_angle,direction,distance
@@ -170,6 +191,7 @@ class SensorCar(SonicCar):
 x = SensorCar(forward_A, forward_B, turning_offset)
 x.car_distance()
 s=data_storage()
+c=cali_ref()
 #data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[]}
 
 #df = pd.Dataframe(data_storage)
@@ -321,16 +343,18 @@ if fmod == 4:
 
 
 if fmod == 5:
+    c.cali_test()
     print('Fahrmodus 5 wird ausgeführt')
-    print(ir.infra())
-    ir.drive(25, x._frontwheels._straight_angle)
-    ir._data_storage.add_data(ir.speed, ir.steering_angle, ir.direction, x.tc_dist())
+    print(x.infra_ref.read_digital())
+    print(x.digital())
+    x.drive(25, x._frontwheels._straight_angle)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(3)
-    ir.drive(-25, x._frontwheels._straight_angle)  # uebergibt nur die Geschwindigkeit
-    ir._data_storage.add_data(ir.speed, ir.steering_angle, ir.direction, x.tc_dist())
+    x.drive(-25, x._frontwheels._straight_angle)  # uebergibt nur die Geschwindigkeit
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(3)
-    ir.stop()
-    ir._data_storage.save_log()
+    x.stop()
+    x._data_storage.save_log()
 
 if fmod == 6:
     print('Abbruch')
