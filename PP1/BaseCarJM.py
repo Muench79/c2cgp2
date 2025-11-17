@@ -63,7 +63,7 @@ except Exception as e:
 sys.exit()
 
 class BaseCar():
-    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
+    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0) -> None:
         log_message("DEBUG", 'Create BaseCar object')
         self._backwheels = BackWheels(forward_A, forward_B)
         self._frontwheels = FrontWheels(turning_offset)
@@ -71,9 +71,23 @@ class BaseCar():
         self._steering_angle = None
         self._direction = None
     
-    def save_data(self, path, format : str = '' , overwrite : bool = False):
-        return self._datastorage.save_data(path, format, overwrite)
+    def save_data(self, path, format : str = '' , overwrite : bool = False) -> int:
+        """Saves the data to a file and returns detailed information
 
+            Args:
+                path (str): File path
+                overwrite (bool): 
+
+            Returns:
+                int: 0 (Storage successful)
+                    -1 (The filename was not specified)
+                    -2 (The directory does not exist)
+                    -3 (The file format is not supported)
+                    -4 (The file already exists)
+                    -5 (An error occurred while writing the file)
+                    -6 (Unknown error (please contact support))
+        return self._datastorage.save_data(path, format, overwrite)
+        """
     @property
     def storage(self):
         return self._datastorage.storage

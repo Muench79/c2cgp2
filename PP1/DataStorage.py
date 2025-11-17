@@ -169,7 +169,7 @@ class DataStorage():
 
             Args:
                 path (str): File path
-                overwrite (bool): 
+                overwrite (bool): True (The file will be overwritten if it already exists), False (The file will not be overwritten. The filename is appended with a timestamp.)
 
             Returns:
                 int: 0 (Storage successful)
