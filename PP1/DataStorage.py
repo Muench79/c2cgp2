@@ -4,6 +4,29 @@ import os
 import logging
 from typing import Union
 
+# Create logger
+logger = logging.getLogger(__name__)
+
+def log_message(level, message, **kwargs):
+    # Format and generate log message
+    param_str = " | ".join(f"{key}={value}" for key, value in kwargs.items())
+    full_message = f"{message} | {param_str}" if param_str else message
+
+
+    if level == "DEBUG":
+        logger.debug(full_message)
+    elif level == "INFO":
+        logger.info(full_message)
+    elif level == "WARNING":
+        logger.warning(full_message)
+    elif level == "ERROR":
+        logger.error(full_message)
+    elif level == "CRITICAL":
+        logger.critical(full_message)
+    else:
+        logger.info(f"Unbekannter Loglevel '{level}': {full_message}")
+
+
 class DataStorage():
     """A class for data storage
 
@@ -12,12 +35,13 @@ class DataStorage():
         storage (bool): Activates data storage
     """
     __file_ext = ('.csv', '.json') # supported file formats
-
+    
     def __init__(self, storage : bool = True) -> None:
         """
         Args:
             storage (bool): Enable (True) or disable (False) data storage. Default value: enabled (True).
         """
+        log_message("DEBUG", 'Create DataStorage object')
         self._data = {} 
         self._data_prepared = []
         self._storage = storage
@@ -28,17 +52,21 @@ class DataStorage():
             key (str): key of value
             value (int, float): value of the key
         """
+        timestamp = time.time()
         if self._storage:
             if key not in self._data:
-                self._data[key] = [(time.time(), value)]
+                self._data[key] = [(timestamp, value)]
+                log_message("DEBUG", 'Add data (new key): ', Key = key, Data = (timestamp, value))
             else:
-                self._data[key].append((time.time(), value))
+                self._data[key].append((timestamp, value))
+                log_message("DEBUG", 'Add data: ', Key = key, Data = (timestamp, value))
     
     def get_data(self) -> dict:
         """
         Returns:
             dict: all saved data
         """
+        log_message("DEBUG", 'get_data(): Return self._data', data = self._data)
         return self._data
 
     def get_keys(self) -> tuple:
@@ -46,11 +74,13 @@ class DataStorage():
         Returns:
             tuple: all existing keys
         """
+        log_message("DEBUG", 'get_keys(): Return self._data.keys())', keys = self._data.keys())
         return tuple(self._data.keys())
     
     def clear_data(self) -> None:
         """Deletes all previously stored data
         """
+        logging.debug('Clear data')
         self._data = {}
         self._data_prepared = []
     
@@ -63,7 +93,8 @@ class DataStorage():
                 self._data_prepared.append({"data_key" : k, "data_time" : t[0], "data_measurement_value" : t[1]})
         if len(self._data_prepared) > 1:
             self._data_prepared.sort(key = lambda x: x['data_time'])
-
+        log_message("DEBUG", '_data_preparation(): ', data_count = len(self._data_prepared))
+        
     def _data_to_csv(self) -> str:
         """Converts the data to csv format
 
@@ -88,8 +119,10 @@ class DataStorage():
                 else:
                     linescsv += ',NaN'
         if not datakeys:
+            log_message("DEBUG", '_data_to_csv(): ', data_count = len(linescsv))
             return ""
         else:
+            log_message("DEBUG", '_data_to_csv(): ', data_count = len(linescsv))
             return linehead + '\n' + linescsv
         
     def _save_data_json(self, path : str) -> int:
@@ -103,10 +136,12 @@ class DataStorage():
                     -1 (storage failed)
         """
         self._data_preparation()
+        log_message("DEBUG", '_save_data_json(): ', pathname = path)
         try:
             with open(path, 'w', encoding = 'utf-8') as jf:
                 json.dump(self._data_prepared, jf, ensure_ascii=False, indent=2)
-        except:
+        except Exception as e:
+            log_message("ERROR", '_save_data_json(): ', pathname = path, info = e)
             return -1
         return 0
     
@@ -120,10 +155,12 @@ class DataStorage():
                 int: 0 (storage successful)
                     -1 (storage failed)
         """
+        log_message("DEBUG", '_save_data_csv(): ', pathname = path)
         try:
             with open(path, 'w', encoding = 'utf-8') as csvf:
                 csvf.write(self._data_to_csv())
-        except:
+        except Exception as e:
+            log_message("ERROR", '_save_data_csv(): ', pathname = path, info = e)
             return -1
         return 0
 
@@ -147,12 +184,14 @@ class DataStorage():
         filename = os.path.basename(path)
         name, ext = os.path.splitext(filename)
         ext2 = ''
+        
         if filename == '':
+            log_message("ERROR", 'save_data(): The filename was not specified', path = path, format = format, overwrite = overwrite)
             return -1 # The filename was not specified
-
         if not os.path.isdir(folder):
+            log_message("ERROR", 'save_data(): The directory does not exist', path = path, format = format, overwrite = overwrite)
             return -2 # The directory does not exist
-        elif not format: 
+        if not format: 
             # There is no specified file format
             if ext == '':
                 # ?-File -> .csv
@@ -164,6 +203,7 @@ class DataStorage():
                 # json-File -> .json
                 ext2 = self.__file_ext[1]
             else:
+                log_message("ERROR", 'save_data(): The file format is not supported', path = path, format = format, overwrite = overwrite)
                 return -3 # The file format is not supported
         else:
             # the file format is predefined
@@ -174,6 +214,7 @@ class DataStorage():
                 # json-File
                 ext2 = self.__file_ext[1]
             else:
+                log_message("ERROR", 'save_data(): The file format is not supported', path = path, format = format, overwrite = overwrite)
                 return -3 # The file format is not supported
             
         timestamp = ''
@@ -186,16 +227,20 @@ class DataStorage():
                 counterstr = f'_{counter:04}'
                 counter += 1
             if counter > 9999:
+                log_message("ERROR", 'save_data(): The file already exists', path = path, format = format, overwrite = overwrite)
                 return -4 # The file already exists
         if ext2 == self.__file_ext[0]:
             r = self._save_data_csv(os.path.join(folder,name + timestamp + counterstr + ext2))
             if r < 0:
+                log_message("ERROR", 'save_data(): An error occurred while writing the file', path = path, format = format, overwrite = overwrite)
                 return -5 # An error occurred while writing the file
         elif ext2 == self.__file_ext[1]:
             r = self._save_data_json(os.path.join(folder,name + timestamp + counterstr + ext2))
             if r < 0:
+                log_message("ERROR", 'save_data(): An error occurred while writing the file', path = path, format = format, overwrite = overwrite)
                 return -5 # An error occurred while writing the file
         else:
+            log_message("ERROR", 'save_data(): Unknown error (please contact support)', path = path, format = format, overwrite = overwrite)
             return -6 # Unknown error (please contact support)
 
     @property
@@ -205,6 +250,7 @@ class DataStorage():
             bool: True  (Data storage is active)
                   False (Data storage is not active. Therefore, no data is being recorded)
         """
+        log_message("DEBUG", 'storage (getter): Return self._storage)', storage = self._storage)
         return self._storage
     
     @storage.setter
@@ -212,10 +258,11 @@ class DataStorage():
         """Changes the state of data storage (True  (Data storage is active), False (Data storage is not active. Therefore, no data is being recorded))
         """
         self._storage = x
+        log_message("DEBUG", 'storage (setter): Set self._storage)', storage = self._storage)
 
 if __name__ == '__main__':
     x = DataStorage()
     x.add_data("Test", 9)
     x.add_data("Test", 10)
-    x.save_data('./tt.csv')
+    x.save_data('tt.json')
     pass

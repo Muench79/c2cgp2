@@ -17,6 +17,7 @@ import RPi.GPIO as GPIO
 import smbus
 import json
 import os
+import sys
 
 
 class Ultrasonic(object):
@@ -217,9 +218,13 @@ class Infrared(object):
     def test(self) -> None:
         """Tests the connection to the infrared module. Prints 10 measurements in 5 seconds.
         """
-        for i in range(10):
+        i = 0
+        while True:
+            i += 1
+        #for i in range(10):
             data = self.read_analog()
-            print('{} : {}'.format(i, data))
+            data2 = self.read_digital()
+            print('{} : {} | {}'.format(i, data, data2))
             time.sleep(.5)
 
 
@@ -938,7 +943,7 @@ def main(modus):
 
     if modus == 4:
         print('Test Infrared')
-        irm = Infrared()
+        irm = Infrared([10,10,10,10,10])
         irm.test()
     
     if modus == 5:
@@ -967,4 +972,9 @@ def main(modus):
             bw.test()
 
 if __name__ == '__main__':
+    x = Infrared()
+    while True:
+        print(x.read_analog())
+        time.sleep(1)
+    sys.exit()
     main()
