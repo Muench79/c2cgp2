@@ -12,7 +12,7 @@ import sys
 import csv
 #
 start_zeit = time.time()
-zeitgrenze = 10
+zeitgrenze = 50
 #datastorage_list = []
 ##data2 = []
 #datastorageDict = {}
@@ -158,8 +158,9 @@ class SensorCar(SonicCar):
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
         super().__init__(forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout)
         self.infra_ref = Infrared(references)
-#        self.new_ref = Infrared.set_references()
-
+        self.min_right_angle = self._frontwheels._straight_angle + 10
+        self.min_left_angle = self._frontwheels._straight_angle - 10
+        
     def array(self):
         print('{} : {}'.format(self.infra_ref.read_analog()))
         return self.infra_ref.read_analog()
@@ -340,7 +341,7 @@ if fmod == 4:
                 x.stop()
                 while x.tc_dist() < 10:
                    time.sleep(2)
-                   x.drive(-25, x._frontwheels._max_angle) 
+                   x.drive(-25, x._frontwheels._max_angle) #max_angle = 135 Grad rechts
                    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
                 x.stop()
                 time.sleep(2)
@@ -362,17 +363,46 @@ if fmod == 5:
     print(x.infra_ref.read_digital())
     print(x.digital())
     print(x.digital()[0])
-    #print()
-    x.drive(25, x._frontwheels._straight_angle)
+    x.drive(45, x._frontwheels._straight_angle)
+    #s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
     x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
-    time.sleep(3)
-    x.drive(-25, x._frontwheels._straight_angle)  # uebergibt nur die Geschwindigkeit
-    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
-    time.sleep(3)
-    x.stop()
-    x._data_storage.save_log()
-
-
+    wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
+    w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
+    while True: 
+        # Möglichkeit Schleife zu beenden
+        d=x.tc_dist() #einlesen der distanz aus der Methode
+        print(d)
+        if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
+            pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
+        elif d < 5: 
+            w=w-1
+            if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
+                time.sleep(2)
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist()) 
+                x.stop()
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist()) 
+      
+        elif x.digital()[2] == 0:
+            x.drive(45, x._frontwheels._straight_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        elif x.digital()[0] & x.digital()[1] == 0:
+            x.drive(45, x.min_left_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        elif x.digital()[0]  == 0:
+            x.drive(45, x._frontwheels._min_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        elif x.digital()[3] & x.digital()[4] == 0:
+            x.drive(45, x.min_right_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        elif x.digital()[4]  == 0:
+            x.drive(45, x._frontwheels._max_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        if time.time() - start_zeit >=zeitgrenze:
+            x.stop()
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+            print("Exit")
+            break
+    x._data_storage.save_log()  
 if fmod == 6:
     print('Abbruch')
     sys.exit()
