@@ -12,7 +12,7 @@ import sys
 import csv
 #
 start_zeit = time.time()
-zeitgrenze = 5
+zeitgrenze = 15
 #datastorage_list = []
 ##data2 = []
 #datastorageDict = {}
@@ -64,8 +64,8 @@ class data_storage():
             self.data_storage["steering_angle"].append(i)
             self.data_storage["ultrasonic"].append(i)
 #        df = pd.Dataframe(self.data_storage)
-    def add_data (self, timestamp, speed, direction, steering_angle, ultrasonic):
-        self.data_storage["timestamp"].append(timestamp)
+    def add_data (self, speed, direction, steering_angle, ultrasonic):
+        self.data_storage["timestamp"].append(time.time())
         self.data_storage["speed"].append(speed)
         self.data_storage["direction"].append(direction)
         self.data_storage["steering_angle"].append(steering_angle)
@@ -86,13 +86,6 @@ class BaseCar():
         self._direction = None # Selbstdefiniere Variable in der der Richtung gespeichert wird - Anfangbedingung None weil kein Richtung bekannt
         print("OK")
     
-#    @property
-#    def storage(self):
-#        return self._datastorage.storage
-    
-#    @storage.setter
-#    def storage(self, x : bool):
-#        self._datastorage.storage = x
 
     @property
     def speed(self):
@@ -120,7 +113,6 @@ class BaseCar():
     @steering_angle.setter
     def steering_angle(self, new_steering_angle):
         self._steering_angle = self._frontwheels.turn(new_steering_angle)
-#        self._datastorage.adddata('steering_angle', new_steering_angle)
         print(self._steering_angle)
 
     @property
@@ -207,12 +199,15 @@ while True:
                           
 if fmod == 1:
     print('Fahrmodus 1 wird ausgeführt')
-    x.drive(25)
-    x.add_data(x.speed, x.steering_angle, x.direction, x.ultrasonic)
+    x.drive(25, x._frontwheels._straight_angle)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(3)
-    x.drive(-25)  # uebergibt nur die Geschwindigkeit
+    x.drive(-25, x._frontwheels._straight_angle)  # uebergibt nur die Geschwindigkeit
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     time.sleep(3)
     x.stop()
+    x._data_storage.save_log()
+    
 
 if fmod == 2:
     print('Fahrmodus 2 wird ausgeführt')
@@ -262,7 +257,8 @@ if fmod == 4:
     start_zeit = time.time()
     print('Fahrmodus 4 wird ausgeführt')
     x.drive(45, x._frontwheels._straight_angle)
-    s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
+    #s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
     wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
     w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
     while True: 
@@ -273,10 +269,12 @@ if fmod == 4:
             pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
         elif d >= 15: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
             x.drive(45, x._frontwheels._straight_angle)
-            w=wd        
+            w=wd     
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())   
         elif d in range(8, 15):
  #           w=wd
             x.drive(20, x._frontwheels._straight_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
         elif d < 8: 
             w=w-1
             if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
@@ -284,15 +282,18 @@ if fmod == 4:
                 while x.tc_dist() < 10:
                    time.sleep(2)
                    x.drive(-25, x._frontwheels._max_angle) 
+                   x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
                 x.stop()
                 time.sleep(2)
                 x.drive(45, x._frontwheels._straight_angle)
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
                 print("Ende", d)
         if time.time() - start_zeit >=zeitgrenze:
             x.stop()
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
             print("Exit")
             break
-               
+    x._data_storage.save_log()           
 if fmod == 5:
     print('Abbruch')
     sys.exit()
