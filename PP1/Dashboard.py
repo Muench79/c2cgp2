@@ -22,7 +22,8 @@ t = (s["timestamp"] - s["timestamp"].iloc[0]).dt.total_seconds().to_numpy()  # (
 v = (s["speed"] * (1000/3600.0)).to_numpy()                    #Umwandlung in m/s  (.to_numpy() wandelt Daten in numpy-Array um (ohne Spaltenname, ohne Index))
 
 # Trapezintegration
-total_dist = np.trapezoid(v, t)                                         # Integration mit Trapezmethode
+total_dist = np.trapz(v, t)
+#total_dist = np.trapezoid(v, t)                                         # Integration mit Trapezmethode
 #print(total_dist, type(total_dist))
 print(f"Zurückgelegte Strecke: {total_dist:.2f} m")
 
