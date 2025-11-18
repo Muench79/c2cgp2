@@ -30,4 +30,6 @@ ipython_config.py
 *README.md
 *.json
 config.json
+*.csv
+*.png
 

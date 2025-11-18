@@ -11,7 +11,7 @@ import time
 
 # Logger erstellen
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.CRITICAL)
 
 # Handler für Konsole
 console_handler = logging.StreamHandler()
@@ -202,7 +202,7 @@ class SonicCar(BaseCar):
                 self.drive(-30, 135)
             elif distance > 10 and self.direction == -1:
                 self.drive(30, 90)
-            time.sleep(0.5)
+            time.sleep(0.1)
 
 class SensorCar(SonicCar):
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
@@ -230,16 +230,18 @@ class SensorCar(SonicCar):
             infrared_data_digital = self._read_digital(timestamp)
             infrared_data_min = min(infrared_data_analog)
             print("p1", infrared_data_analog)
-            if infrared_data_min < 25:
+            if infrared_data_min < 40:
                 break
             time.sleep(0.5)
         self.drive(30, 90)
         t = time.time()
         while (time.time() - t) < 3:
-            infrared_data_analog = self._read_analog()
-            infrared_data_digital = self._read_digital()
+            timestamp = time.time()
+            infrared_data_analog = self._read_analog(timestamp)
+            infrared_data_digital = self._read_digital(timestamp)
+            count_threshold = sum(1 for v in infrared_data_analog if v < 40)
             infrared_data_min = min(infrared_data_analog)
-            min_value_pos = infrared_data_analog.index(infrared_data_min)
+            min_value_pos = infrared_data_analog.index(infrared_data_min) if infrared_data_min < 40 and count_threshold == 1 else -1
             print(min_value_pos, infrared_data_min)
             if min_value_pos == 4:
                 self.drive(30, 145)
@@ -251,9 +253,9 @@ class SensorCar(SonicCar):
                 self.drive(30, 67.5)
             elif min_value_pos == 0:
                 self.drive(30, 45)
-            time.sleep(0.5)
+            time.sleep(0.1)
             print(min_value_pos)
-            if infrared_data_min < 25:
+            if infrared_data_min < 40:
                 t = time.time()
         self.stop()
     def driving_mode_6(self):

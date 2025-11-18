@@ -7,7 +7,7 @@ def test(m):
 #lambda m: str(int(m.group()) + 1)
 
 xx = 'c:\\tets\\test_0.csv'
-while xx != "c:\\tets\\test_999.csv":644235
+while xx != "c:\\tets\\test_999.csv":
     r = re.sub(r'(?<=\_)(?P<count>[0-9]{1,3})(?=\.csv|\.json)', lambda m: str(int(m.group('count')) + 1) if int(m.group('count')) < 999 else m.group('count'), xx)
     xx = r
     print(r)                                                       #lambda m: str(int(m.group('count')) + 1) if int(m.group('count')) < 999 else m.group('count')
