@@ -57,7 +57,7 @@ except:
 #        return Infrared.cali_references
 class data_storage():
     def __init__(self): # self wichtig um aus der Klasse ein Objekt machen mit eigener speicherung 
-        self.data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[]}
+        self.data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[], "Infrared":[]}
      
     def drive_parkour_1(self):#Test der Funktionen
         for i in range(20):
@@ -66,13 +66,15 @@ class data_storage():
             self.data_storage["direction"].append(i)
             self.data_storage["steering_angle"].append(i)
             self.data_storage["ultrasonic"].append(i)
+            self.data_storage["Infrared"].append(i)
 #        df = pd.Dataframe(self.data_storage)
-    def add_data (self, speed, direction, steering_angle, ultrasonic):
+    def add_data (self, speed, direction, steering_angle, ultrasonic, Infrared):
         self.data_storage["timestamp"].append(time.time())
         self.data_storage["speed"].append(speed)
         self.data_storage["direction"].append(direction)
         self.data_storage["steering_angle"].append(steering_angle)
-        self.data_storage["ultrasonic"].append(ultrasonic) 
+        self.data_storage["ultrasonic"].append(ultrasonic)
+        self.data_storage["Infrared"].append(Infrared) 
     def save_log(self):
         df = pd.DataFrame.from_dict(self.data_storage)
         df.to_csv("data_storage.csv", index=False)
@@ -158,8 +160,8 @@ class SensorCar(SonicCar):
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
         super().__init__(forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout)
         self.infra_ref = Infrared(references)
-        self.min_right_angle = self._frontwheels._straight_angle + 10
-        self.min_left_angle = self._frontwheels._straight_angle - 10
+        self.min_right_angle = self._frontwheels._straight_angle + 20
+        self.min_left_angle = self._frontwheels._straight_angle - 20
         
     def array(self):
         print('{} : {}'.format(self.infra_ref.read_analog()))
@@ -176,7 +178,7 @@ class SensorCar(SonicCar):
         """
 
         new_analog = np.array(self.infra_ref.read_analog())
-        new_digital = np.where(new_analog < self.infra_ref._references, 1, 0)
+        new_digital = np.where(new_analog < self.infra_ref._references, 0, 1)
         #new_digital = np.where(new_analog < self.infra_ref.set_references(ref=()), 1, 0)
         print(f"{new_analog} na class_digital")
         print(list(new_digital))
@@ -365,44 +367,55 @@ if fmod == 5:
     print(x.digital()[0])
     x.drive(45, x._frontwheels._straight_angle)
     #s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
-    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
     wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
     w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
     while True: 
         # Möglichkeit Schleife zu beenden
         d=x.tc_dist() #einlesen der distanz aus der Methode
         print(d)
+        print(x.digital())
         if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
+            print(x.digital())
+#            print(x.new_analog())
             pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
         elif d < 5: 
             w=w-1
             if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
                 time.sleep(2)
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist()) 
+                print(x.infra_ref.read_digital())
+                print(x.digital())
+                print(x.digital()[0])
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
                 x.stop()
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist()) 
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
       
         elif x.digital()[2] == 0:
             x.drive(45, x._frontwheels._straight_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
         elif x.digital()[0] & x.digital()[1] == 0:
             x.drive(45, x.min_left_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
         elif x.digital()[0]  == 0:
             x.drive(45, x._frontwheels._min_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
         elif x.digital()[3] & x.digital()[4] == 0:
             x.drive(45, x.min_right_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
         elif x.digital()[4]  == 0:
             x.drive(45, x._frontwheels._max_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+        elif x.digital()[1, 1, 1, 1, 1] == True:
+            x.stop()
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+            print("Linienverfolgung beendet")   
         if time.time() - start_zeit >=zeitgrenze:
             x.stop()
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
             print("Exit")
             break
     x._data_storage.save_log()  
+
 if fmod == 6:
     print('Abbruch')
     sys.exit()
