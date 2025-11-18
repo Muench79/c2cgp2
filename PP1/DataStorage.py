@@ -37,22 +37,26 @@ class DataStorage():
     __file_ext = ('.csv', '.json') # supported file formats
     
     def __init__(self, storage : bool = True) -> None:
-        """
+        """Initializes the data storage
         Args:
-            storage (bool): Enable (True) or disable (False) data storage. Default value: enabled (True).
+            storage (bool, optional): Whether data storage should be enabled.
+                True (default) - Enable data storage
+                False          - Disable data storage
         """
         log_message("DEBUG", 'Create DataStorage object')
         self._data = {} 
         self._data_prepared = []
         self._storage = storage
 
-    def add_data(self, key : (str), value : Union[int, float]) -> None:
-        """
+    def add_data(self, key : (str), value : Union[int, float], timestamp : (float) = None) -> None:
+        """Adds data to the data store.
         Args:
             key (str): key of value
             value (int, float): value of the key
         """
-        timestamp = time.time()
+        if not timestamp:
+            timestamp = time.time()
+        
         if self._storage:
             if key not in self._data:
                 self._data[key] = [(timestamp, value)]
@@ -261,6 +265,7 @@ class DataStorage():
         log_message("DEBUG", 'storage (setter): Set self._storage)', storage = self._storage)
 
 if __name__ == '__main__':
+    help(DataStorage)
     x = DataStorage()
     x.add_data("Test", 9)
     x.add_data("Test", 10)

@@ -972,6 +972,9 @@ def main(modus):
             bw.test()
 
 if __name__ == '__main__':
+    #print(Ultrasonic.__doc__)
+    #help(Ultrasonic)
+    #sys.exit()
     x = Infrared()
     while True:
         print(x.read_analog())
