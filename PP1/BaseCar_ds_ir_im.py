@@ -252,7 +252,7 @@ print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg 
 print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp Vorwärtsfahrt bis Hindernis:')
 print('4: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
 print('5: = Fmod5: Vfw = IR Test')
-print('6: = Fmod5: Vfw = IR Test_analog')
+print('6: = Fmod6: Vfw = IR Test_analog')
 print('7: = Abbruch')
 while True:
     try:
@@ -383,7 +383,7 @@ if fmod == 5:
     #print(x.digital()[0])
     x.drive(30, x._frontwheels._straight_angle)
     #s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
-    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
     wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
     w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
     while True: 
@@ -402,38 +402,37 @@ if fmod == 5:
                 #print(x.infra_ref.read_digital())
                 #print(x.digital())
                 #print(x.digital()[0])
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog()) 
                 x.stop()
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog()) 
 
         elif x.digital()[2] == 0:
             x.drive(30, x._frontwheels._straight_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
            
         elif x.digital()[0] & x.digital()[1] == 0:
             x.drive(30, x.min_left_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
             
         
         elif x.digital()[0]  == 0:
             x.drive(30, x._frontwheels._min_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         elif x.digital()[3] & x.digital()[4] == 0:
             x.drive(30, x.min_right_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         elif x.digital()[4]  == 0:
             x.drive(30, x._frontwheels._max_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         elif x.digital()== [0, 0, 0, 0, 0]:
             x.stop()
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog()) 
             print("Linienverfolgung beendet")   
         if time.time() - start_zeit >=zeitgrenze:
             x.stop()
-            
             print("Exit")
             break
-    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
     x._data_storage.save_log()  
 
 if fmod == 6:
@@ -448,13 +447,14 @@ if fmod == 6:
     #print(x.digital()[0])
     x.drive(30, x._frontwheels._straight_angle)
     #s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
-    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
     wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
     w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
     while True: 
         # Möglichkeit Schleife zu beenden
         d=x.tc_dist() #einlesen der distanz aus der Methode
         _index = x.analog()
+        _array = x.digital()
         print(d)
         print(f"indexwhile {_index}")
         if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
@@ -468,37 +468,36 @@ if fmod == 6:
                 #print(x.infra_ref.read_digital())
                 #print(x.digital())
                 #print(x.digital()[0])
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog()) 
                 x.stop()
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog()) 
             print(f"Aktueller Index {_index}")
+       # if  _array == [1, 1, 1, 1, 1]:
+        #    x.stop()
+         #   x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+          #  print("Linienverfolgung beendet")
+           # break   
         elif _index == 2: 
             x.drive(30, x._frontwheels._straight_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         elif _index == 1:
             x.drive(30, x.min_left_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())    
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())    
         elif _index == 0:
             x.drive(30, x._frontwheels._min_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         elif _index == 3:
             x.drive(30, x.min_right_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         elif _index  == 4:
             x.drive(30, x._frontwheels._max_angle)
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
-
-  #      elif x.digital()== [0, 0, 0, 0, 0]:
-   #         x.stop()
-    #        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
-     #       print("Linienverfolgung beendet")   
-
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         if time.time() - start_zeit >=zeitgrenze:
             x.stop()
             
             print("Exit")
             break
-    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
     x._data_storage.save_log()  
 
 
@@ -508,7 +507,7 @@ if fmod == 7:
 
 while True:
     try:
-        fmod = int(input("Für Abbruch Bitte die 5: "))
+        fmod = int(input("Für Abbruch Bitte die 7: "))
         break
     except ValueError:
         print("Bitte eine gültige Ganzzahl eingeben.")
