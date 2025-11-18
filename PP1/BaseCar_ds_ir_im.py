@@ -12,7 +12,7 @@ import sys
 import csv
 #
 start_zeit = time.time()
-zeitgrenze = 50
+zeitgrenze = 70
 #datastorage_list = []
 ##data2 = []
 #datastorageDict = {}
@@ -179,15 +179,24 @@ class SensorCar(SonicCar):
 
         new_analog = np.array(self.infra_ref.read_analog())
         new_digital = np.where(new_analog < self.infra_ref._references, 0, 1)
-        #new_digital = np.where(new_analog < self.infra_ref.set_references(ref=()), 1, 0)
-        print(f"{new_analog} na class_digital")
-        print(list(new_digital))
-        print(f"{new_digital} nd_class_digital")
-        print(f"{new_analog < self.infra_ref._references} na-ref class_digital")
-        print(new_digital[0])
-        return list(new_digital) #Return übergibt ausgabe Wert der MEthode. Dieser kann dann durch den aufruf x.digial usw abgefragt werden
-    
 
+        min_analog_value = min(new_analog)
+        #min_analog_value
+        min_analog_index = list(new_analog).index(min_analog_value) 
+        print(new_digital[0])
+        return list(new_digital)  #Return übergibt ausgabe Wert der MEthode. Dieser kann dann durch den aufruf x.digial usw abgefragt werden
+    
+    
+    def analog(self) -> list:
+        new_analog = np.array(self.infra_ref.read_analog())
+        min_analog_value = min(new_analog)
+        min_analog_index = list(new_analog).index(min_analog_value) 
+        print(f"{new_analog} na class_digital")
+        
+        print(f"{min_analog_index} min_analog")
+        print(f"{min_analog_value} min analog_value")
+        return min_analog_index
+    
 
 
 
@@ -205,6 +214,9 @@ class SensorCar(SonicCar):
 # Datenaufzeichnung und Speicherung   
 #x = SonicCar(forward_A, forward_B, turning_offset)
 x = SensorCar(forward_A, forward_B, turning_offset)
+#_array, _index = x.digital()
+#print(f" test_analog_W1_W {_array, _index}")
+#print(f"Index = {_index}")
 x.car_distance()
 s=data_storage()
 #c=cali_ref()
@@ -240,7 +252,8 @@ print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg 
 print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp Vorwärtsfahrt bis Hindernis:')
 print('4: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
 print('5: = Fmod5: Vfw = IR Test')
-print('6: = Abbruch')
+print('6: = Fmod5: Vfw = IR Test_analog')
+print('7: = Abbruch')
 while True:
     try:
         fmod = int(input("Bitte Fahrmodus eingeben: "))
@@ -359,13 +372,16 @@ if fmod == 4:
 
 
 if fmod == 5:
+    x.drive(0, 100)
+    #print(x.digital())
     x.cali_test()
+    #print(x.digital())
     time.sleep(3)
     print('Fahrmodus 5 wird ausgeführt')
-    print(x.infra_ref.read_digital())
-    print(x.digital())
-    print(x.digital()[0])
-    x.drive(45, x._frontwheels._straight_angle)
+    #print(x.infra_ref.read_digital())
+    #print(x.digital())
+    #print(x.digital()[0])
+    x.drive(30, x._frontwheels._straight_angle)
     #s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
     x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
     wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
@@ -374,7 +390,7 @@ if fmod == 5:
         # Möglichkeit Schleife zu beenden
         d=x.tc_dist() #einlesen der distanz aus der Methode
         print(d)
-        print(x.digital())
+        #print(x.digital())
         if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
             print(x.digital())
 #            print(x.new_analog())
@@ -383,40 +399,110 @@ if fmod == 5:
             w=w-1
             if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
                 time.sleep(2)
-                print(x.infra_ref.read_digital())
-                print(x.digital())
-                print(x.digital()[0])
+                #print(x.infra_ref.read_digital())
+                #print(x.digital())
+                #print(x.digital()[0])
                 x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
                 x.stop()
                 x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
-      
+
         elif x.digital()[2] == 0:
-            x.drive(45, x._frontwheels._straight_angle)
+            x.drive(30, x._frontwheels._straight_angle)
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+           
         elif x.digital()[0] & x.digital()[1] == 0:
-            x.drive(45, x.min_left_angle)
+            x.drive(30, x.min_left_angle)
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+            
+        
         elif x.digital()[0]  == 0:
-            x.drive(45, x._frontwheels._min_angle)
+            x.drive(30, x._frontwheels._min_angle)
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
         elif x.digital()[3] & x.digital()[4] == 0:
-            x.drive(45, x.min_right_angle)
+            x.drive(30, x.min_right_angle)
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
         elif x.digital()[4]  == 0:
-            x.drive(45, x._frontwheels._max_angle)
+            x.drive(30, x._frontwheels._max_angle)
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
-        elif x.digital()[1, 1, 1, 1, 1] == True:
+        elif x.digital()== [0, 0, 0, 0, 0]:
             x.stop()
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
             print("Linienverfolgung beendet")   
         if time.time() - start_zeit >=zeitgrenze:
             x.stop()
-            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+            
             print("Exit")
             break
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
     x._data_storage.save_log()  
 
 if fmod == 6:
+    x.drive(0, 100)
+    #print(x.digital())
+    x.cali_test()
+    #print(x.digital())
+    time.sleep(3)
+    print('Fahrmodus 5 wird ausgeführt')
+    #print(x.infra_ref.read_digital())
+    #print(f"Aktueller Index {_index}")
+    #print(x.digital()[0])
+    x.drive(30, x._frontwheels._straight_angle)
+    #s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+    wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
+    w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
+    while True: 
+        # Möglichkeit Schleife zu beenden
+        d=x.tc_dist() #einlesen der distanz aus der Methode
+        _index = x.analog()
+        print(d)
+        print(f"indexwhile {_index}")
+        if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
+            print(x.digital())
+#            print(x.new_analog())
+            pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
+        elif d < 5: 
+            w=w-1
+            if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
+                time.sleep(2)
+                #print(x.infra_ref.read_digital())
+                #print(x.digital())
+                #print(x.digital()[0])
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+                x.stop()
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+            print(f"Aktueller Index {_index}")
+        elif _index == 2: 
+            x.drive(30, x._frontwheels._straight_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+        elif _index == 1:
+            x.drive(30, x.min_left_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())    
+        elif _index == 0:
+            x.drive(30, x._frontwheels._min_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+        elif _index == 3:
+            x.drive(30, x.min_right_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+        elif _index  == 4:
+            x.drive(30, x._frontwheels._max_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(),x.digital())
+
+  #      elif x.digital()== [0, 0, 0, 0, 0]:
+   #         x.stop()
+    #        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital()) 
+     #       print("Linienverfolgung beendet")   
+
+        if time.time() - start_zeit >=zeitgrenze:
+            x.stop()
+            
+            print("Exit")
+            break
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.digital())
+    x._data_storage.save_log()  
+
+
+if fmod == 7:
     print('Abbruch')
     sys.exit()
 
