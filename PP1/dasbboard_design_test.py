@@ -23,11 +23,13 @@ v = (s["speed"] * (1000/3600.0)).to_numpy()                    #Umwandlung in m/
 
 # Trapezintegration
 total_dist = np.trapezoid(v, t)                                         # Integration mit Trapezmethode
-#print(total_dist, type(total_dist))
+#print(total_dist, type(total_dist))                                     # zum Check
 print(f"Zurückgelegte Strecke: {total_dist:.2f} m")
 
-total_time = s["timestamp"].iloc[-1] - s["timestamp"].iloc[0]
-#print(f"maxspeed: {max_speed}; minspeed: {min_speed}; avgspeed: {avg_speed}; totaldist: {total_dist}; totaltime: {total_time}")
+s2 = Dashdf["timestamp"].dropna().sort_values()                      # Werte sortieren
+total_time=s2.iloc[-1] - s2.iloc[0]
+total_time2=s.iloc[-1] - s.iloc[0]
+print(f"maxspeed: {max_speed}; minspeed: {min_speed}; avgspeed: {avg_speed}; totaldist: {total_dist}; totaltime: {total_time}; totaltime2: {total_time2}")
 
 
 # Formatierung
@@ -41,20 +43,16 @@ def fmt_time(sec):
     return f"{h:02d}:{m:02d}:{s:02d}"
 time_delta = Dashdf["timestamp"].max() - Dashdf["timestamp"].min()
 total_time_sec = time_delta.total_seconds()
-#print (total_time_sec)
-#print(fmt_time(total_time_sec))  # z.B. 00:00:20
+print (total_time_sec)
+print(fmt_time(total_time_sec))  # z.B. 00:00:20
 
 
-    # ----Dash App erzeugen----
-app = Dash(__name__, external_stylesheets=[dbc.themes.SPACELAB])
+    # ----Dash App erzuegen----
+app = Dash(__name__, external_stylesheets=[dbc.themes.CYBORG])
 
 card_style = {                                              # Stil der Karten vorgeben
-    "border": "1px solid #ddd",
     "borderRadius": "6px",
     "padding": "6px 8px",
-    "minWidth": "80px",
-    "boxShadow": "0 2px 8px rgba(0,0,0,0.06)",
-    "background": "#e6f7e6"                     #Pastellgrün: #e6f7e6, hellgrau:#e6e6e6
 }
 
 fig = px.line(Dashdf,x="timestamp",y="speed",title="<b><i>Fahrgeschwindigkeit</i></b>",labels={"timestamp": "Zeit", "speed": "Speed (m/s)"})                 # Graph vordefinieren, <b>...</b> fett geschrieben; <i>…</i> --> kursiv
@@ -65,6 +63,7 @@ fig.update_layout(title={   "x": 0.5,               # Titel ausrichten  0 = link
                                 # color="black"    # optional Farbe
                                 ),
                 )
+
 
 app.layout = html.Div([                                                         # zentriert       #Schriftgröße     #schriftart kursiv      Zeilenabstand oben/unten
                     html.Div([dbc.Row([html.H3("Fahrdaten – KPIs", id="h-1", style={"textAlign": "center", "fontSize": "42px", "fontStyle": "italic", "margin": "16px 0"})]),
@@ -131,17 +130,10 @@ def update_graph(sel_value, options):                               # mit dieser
 
     fig = px.line(Dashdf,x="timestamp",y=sel_value,title=f"<b><i>{label}</i></b>",labels={"timestamp": "Zeit", sel_value: label},)   # plot definieren. <b>...</b> fett geschrieben; <i>…</i> --> kursiv
     fig.update_layout(title_x=0.5,title_xanchor="center",title_font=dict(size=24))      # titel zentrieren und figure updaten
-    #print(f"options sind: {options}")
+    print(f"options sind: {options}")
     return fig
 
 if __name__ == "__main__":
-
-    print("-------------------------------------------------")
-    print(f"Dash-Server gestartet. Im Browser aufrufen über:")
-    print(f"  -> http://127.0.0.1:{8053}")
-    print(f"  oder (von anderem Gerät): http://<IP-deines-Rechners>:{8053}")
-    print("-------------------------------------------------")
  	
     app.run(host="0.0.0.0", port=8053, debug=True)#debug=True setzt das Programm in debug-mode und ich muss nicht andauernd das Programm abbrechen und neu starten wenn ich was geändert habe, sondern es wird dauerhaft aktualisiert
-
 
