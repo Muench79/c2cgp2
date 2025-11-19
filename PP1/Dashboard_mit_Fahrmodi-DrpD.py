@@ -1,3 +1,5 @@
+#pip install dash==2.16.1 dash-bootstrap-components pandas numpy plotly
+
 import pandas as pd
 from dash import Dash, html, dcc, Input, Output, dash_table
 import dash_bootstrap_components as dbc
@@ -5,12 +7,19 @@ from dash.dependencies import Input, Output, State
 import plotly.express as px
 import numpy as np
 import os
+from dash.exceptions import PreventUpdate
+import threading
+from BaseCar_ds_ir_RM import SensorCar, run_mode                                    # BaseCar Klasse SensorCar und funktion run_mode importieren für Fahrmodusvorgabe
 
-if os.path.exists("data_storage.csv") and os.path.getsize("data_storage.csv") > 0:
-    Dashdf = pd.read_csv("data_storage.csv")
+x = SensorCar()                                                                     # Auto-Objekt definieren mit Standardwerten
+
+CSV_PATH = "data_storage.csv"
+
+if os.path.exists(CSV_PATH) and os.path.getsize(CSV_PATH) > 0:
+    Dashdf = pd.read_csv(CSV_PATH)
 else:
     raise FileNotFoundError(
-        f"❌ Fehler: '{"data_storage.csv"}' fehlt oder ist leer.\n"
+        f"❌ Fehler: '{CSV_PATH}' fehlt oder ist leer.\n"
         "Bitte zuerst Fahrdaten erzeugen und erneut starten."
     )
 
@@ -76,9 +85,9 @@ fig.update_layout(title={   "x": 0.5,               # Titel ausrichten  0 = link
 
 app.layout = html.Div([                                                         # zentriert       #Schriftgröße     #schriftart kursiv      Zeilenabstand oben/unten
                     html.Div([dbc.Row([html.H3("Fahrdaten – KPIs", id="h-1", style={"textAlign": "center", "fontSize": "42px", "fontStyle": "italic", "margin": "16px 0"})]),
-                        html.Div(                          # Dropdown oben rechts über dem Diagramm
-                            dcc.Dropdown(
-                                id="drpd-1",options=[  {"label": "Fahrmodus 1", "value": "1"},                    # label definiert den Anzeigenamen im Dropdown
+                        html.Div([                                                                            # Division für Dropdown Fahrmodusauswahl
+                            dcc.Dropdown(                                                                    # Dropdown
+                                id="drpd-1",options=[  {"label": "Fahrmodus 1", "value": "1"},               # label definiert den Anzeigenamen im Dropdown
                                                         {"label": "Fahrmodus 2", "value": "2"},              # Value definiert den Wert, der übergeben wird an die Callbackfunktion
                                                         {"label": "Fahrmodus 3", "value": "3"},
                                                         {"label": "Fahrmodus 4", "value": "4"},
@@ -86,11 +95,14 @@ app.layout = html.Div([                                                         
                                                         {"label": "Fahrmodus 6", "value": "6"}, 
                                                         {"label": "Fahrmodus 7", "value": "7"}, 
                                                             ],
-                                value="0",                                          #Startwert bzw defaultwert
+                                value=None,                                                                   #Startwert bzw defaultwert
+                                placeholder="Fahrmodus auswählen",
                                 clearable=False,
-                                style={"width": "250px"}),                              #Breite definieren
+                                style={"width": "250px"}),                                                     #Breite definieren 
+                                html.Div(id="fahrmodus_status"), 
+                        ],                                                                                                    
                             style={"display": "flex",
-                                   "justifyContent": "flex-start",  # ➜ nach links ausrichten
+                                   "justifyContent": "flex-start",                                           # ➜ nach links ausrichten
                                     "marginBottom": "8px"},
                             ),
                         dbc.Row([
@@ -139,6 +151,25 @@ app.layout = html.Div([                                                         
                         dcc.Graph(id="gr-1",figure=fig)
                         ])
                     ])
+
+
+@app.callback(                                                                      # callback Fahrmodus
+    Output("fahrmodus_status", "children"),
+    Input("drpd-1", "value"),
+    prevent_initial_call=True,
+)
+def start_fahrmodus(value):
+    if value is None or value == "0":
+        raise PreventUpdate
+
+    fmod = int(value)
+
+    # Thread starten, der run_mode ausführt
+    t = threading.Thread(target=run_mode, args=(fmod, x), daemon=True)
+    t.start()
+
+    return f"Fahrmodus {fmod} gestartet."
+
 
 @app.callback(		                                                    #Callbackfunktion Dropdown
             Output("gr-1","figure"),                                    # Figure soll geändert werden		
