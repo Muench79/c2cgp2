@@ -542,7 +542,7 @@ if fmod == 7:
                         x.drive(-30, 90)
                         time.sleep(0.4)
                         x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
-            
+            # 
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
             #time.sleep(0.5)
             print("Linie verloren rückwärts")
