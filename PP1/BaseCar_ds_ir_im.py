@@ -506,12 +506,16 @@ if fmod == 7:
     time.sleep(3)
     print('Fahrmodus 7 wird ausgeführt')
     x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
-    ir_ref = 10
+    #ir_ref = 10 Wieder einkommentieren wenn threshold nicht Funktionsfähig
+
     while True: 
         # Möglichkeit Schleife zu beenden
         #d=x.tc_dist() #einlesen der distanz aus der Methode
-        max_ir = x._max_analog_value
-        break_ir = x._break_analog_value
+        #ir_ref = (x._max_analog_value + x._min_analog_value) / 2
+        ir_ref = (np.mean(x.infra_ref.read_analog())) * 0.85
+        print(f"ir_ref {ir_ref}")
+        #max_ir = x._max_analog_value
+        #break_ir = x._break_analog_value
         _index = x.analog()
         #print(f"max a x_ {x._break_analog_value}")
         #print(f" break_a_x. {x._max_analog_value}")
@@ -519,7 +523,7 @@ if fmod == 7:
         #print(f" break_a {break_ir}")
         #print(d)
         print(f"indexwhile {_index}")
-        Index = []
+        #Index = []
         count_threshold = sum(1 for v in x.infra_ref.read_analog() if v < ir_ref) #Ermittlung Anzahl von Werte unterhal der Schwelle
         print(f"count {count_threshold}")
         print(f" red analog {x.infra_ref.read_analog()}")
@@ -568,13 +572,13 @@ if fmod == 7:
         elif _index  == 4:
             x.drive(20, x._frontwheels._max_angle)
             x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
-         
+        
 
         if time.time() - start_zeit >=zeitgrenze:
             x.stop()
             print("Time-Exit")
-            print(f"max a {max_ir}")
-            print(f" break_a {break_ir}")
+            #print(f"max a {max_ir}")
+            #print(f" break_a {break_ir}")
             break
     ["Index"].append(_index) 
     x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
