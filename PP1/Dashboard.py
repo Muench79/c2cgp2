@@ -4,8 +4,15 @@ import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import numpy as np
+import os
 
-Dashdf = pd.read_csv("data_storage.csv")
+if os.path.exists("data_storage.csv") and os.path.getsize("data_storage.csv") > 0:
+    Dashdf = pd.read_csv("data_storage.csv")
+else:
+    raise FileNotFoundError(
+        f"❌ Fehler: '{CSV_PATH}' fehlt oder ist leer.\n"
+        "Bitte zuerst Fahrdaten erzeugen und erneut starten."
+    )
 
 #Optional timestampspalte in Zeitwerte konvertieren
 Dashdf["timestamp"] = pd.to_datetime(Dashdf["timestamp"], unit="s")
@@ -22,8 +29,8 @@ t = (s["timestamp"] - s["timestamp"].iloc[0]).dt.total_seconds().to_numpy()  # (
 v = (s["speed"] * (1000/3600.0)).to_numpy()                    #Umwandlung in m/s  (.to_numpy() wandelt Daten in numpy-Array um (ohne Spaltenname, ohne Index))
 
 # Trapezintegration
-total_dist = np.trapz(v, t)
-#total_dist = np.trapezoid(v, t)                                         # Integration mit Trapezmethode
+#total_dist = np.trapz(v, t)
+total_dist = np.trapezoid(v, t)                                         # Integration mit Trapezmethode
 #print(total_dist, type(total_dist))
 print(f"Zurückgelegte Strecke: {total_dist:.2f} m")
 
@@ -69,6 +76,23 @@ fig.update_layout(title={   "x": 0.5,               # Titel ausrichten  0 = link
 
 app.layout = html.Div([                                                         # zentriert       #Schriftgröße     #schriftart kursiv      Zeilenabstand oben/unten
                     html.Div([dbc.Row([html.H3("Fahrdaten – KPIs", id="h-1", style={"textAlign": "center", "fontSize": "42px", "fontStyle": "italic", "margin": "16px 0"})]),
+                        html.Div(                          # Dropdown oben rechts über dem Diagramm
+                            dcc.Dropdown(
+                                id="drpd-1",options=[  {"label": "Fahrmodus 1", "value": "1"},                    # label definiert den Anzeigenamen im Dropdown
+                                                        {"label": "Fahrmodus 2", "value": "2"},              # Value definiert den Wert, der übergeben wird an die Callbackfunktion
+                                                        {"label": "Fahrmodus 3", "value": "3"},
+                                                        {"label": "Fahrmodus 4", "value": "4"},
+                                                        {"label": "Fahrmodus 5", "value": "5"},
+                                                        {"label": "Fahrmodus 6", "value": "6"}, 
+                                                        {"label": "Fahrmodus 7", "value": "7"}, 
+                                                            ],
+                                value="0",                                          #Startwert bzw defaultwert
+                                clearable=False,
+                                style={"width": "250px"}),                              #Breite definieren
+                            style={"display": "flex",
+                                   "justifyContent": "flex-start",  # ➜ nach links ausrichten
+                                    "marginBottom": "8px"},
+                            ),
                         dbc.Row([
                                 dbc.Col(html.Div([
                                     html.Div("Min Speed [m/s]",style={"color": "#666", "fontSize": "14px"},),
@@ -100,7 +124,7 @@ app.layout = html.Div([                                                         
                     html.Div([
                         html.Div(                          # Dropdown oben rechts über dem Diagramm
                             dcc.Dropdown(
-                                id="drpd-1",options=[  {"label": "Geschwindigkeit [m/s]", "value": "speed"},                    # label definiert den Anzeigenamen im Dropdown
+                                id="drpd-2",options=[  {"label": "Geschwindigkeit [m/s]", "value": "speed"},                    # label definiert den Anzeigenamen im Dropdown
                                                         {"label": "Lenkwinkel [Grad]", "value": "steering_angle"},              # Value definiert den Wert, der übergeben wird an die Callbackfunktion
                                                         {"label": "Fahrtrichtung [-]", "value": "direction"},
                                                         {"label": "Abstand z. Hinderniss [-]", "value": "ultrasonic"}, 
@@ -118,8 +142,8 @@ app.layout = html.Div([                                                         
 
 @app.callback(		                                                    #Callbackfunktion Dropdown
             Output("gr-1","figure"),                                    # Figure soll geändert werden		
-            Input("drpd-1", "value"),                                    # Wert von Callback erfragen
-            State("drpd-1", "options")                                  # zusätzlich dir Options aus Zeile 85 bis 88 übergeben                               
+            Input("drpd-2", "value"),                                    # Wert von Callback erfragen
+            State("drpd-2", "options")                                  # zusätzlich dir Options aus Zeile 85 bis 88 übergeben                               
     )
 
 
@@ -139,10 +163,10 @@ if __name__ == "__main__":
 
     print("-------------------------------------------------")
     print(f"Dash-Server gestartet. Im Browser aufrufen über:")
-    print(f"  -> http://127.0.0.1:{8053}")
+    print(f"  -> http://127.0.0.1:{8050}")
     print(f"  oder (von anderem Gerät): http://<IP-deines-Rechners>:{8053}")
     print("-------------------------------------------------")
  	
-    app.run(host="0.0.0.0", port=8053, debug=True)#debug=True setzt das Programm in debug-mode und ich muss nicht andauernd das Programm abbrechen und neu starten wenn ich was geändert habe, sondern es wird dauerhaft aktualisiert
-
+    app.run(host="0.0.0.0", port=8050, debug=True)                  #debug=True setzt das Programm in debug-mode und ich muss nicht andauernd das Programm abbrechen und neu starten wenn ich was geändert habe, sondern es wird dauerhaft aktualisiert
+    #app.run_server(debug=False, host="127.0.0.1", port=8050)
 
