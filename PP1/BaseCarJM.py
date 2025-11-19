@@ -313,22 +313,26 @@ class SensorCar(SonicCar):
     def driving_mode_7(self):
         pass
 if __name__ == '__main__':
-    print("Statrte")
-    car = SensorCar(forward_A, forward_B, turning_offset, references=[3,3,3,3,3])
-    car.stop()
-    car.storage = True
-    car.driving_mode_6()
-    car.drive(0,90)
-    #car.stop()
-    car.save_data('./line_test.csv', overwrite=False)
-    sys.exit()
-    car.fahrmodus_4()
-    car.stop()
-    #print(car.savedata('./data.csv'))
-    sys.exit()
-    sleep(3)
-    
+    try:
+        print("Statrte")
+        car = SensorCar(forward_A, forward_B, turning_offset, references=[3,3,3,3,3])
+        car.stop()
+        car.storage = True
+        car.driving_mode_6()
+        car.drive(0,90)
+        #car.stop()
+        car.save_data('./line_test.csv', overwrite=False)
+        sys.exit()
+        car.fahrmodus_4()
+        car.stop()
+        #print(car.savedata('./data.csv'))
+        sys.exit()
+        sleep(3)
+        
 
-    #print(car.getdata())
-    pprint.pprint(car.getdata())
-    #car = CarTest(BaseCar(forward_A, forward_B, turning_offset))
+        #print(car.getdata())
+        pprint.pprint(car.getdata())
+        #car = CarTest(BaseCar(forward_A, forward_B, turning_offset))
+    except:
+        car.save_data('./line_test.csv', overwrite=False)
+        car.stop()
