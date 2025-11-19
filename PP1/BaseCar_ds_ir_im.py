@@ -12,7 +12,7 @@ import sys
 import csv
 #
 start_zeit = time.time()
-zeitgrenze = 80
+zeitgrenze = 80 
 
 #datastorage_list = []
 ##data2 = []
@@ -69,7 +69,7 @@ class data_storage():
             self.data_storage["ultrasonic"].append(i)
             self.data_storage["Infrared"].append(i)
 #        df = pd.Dataframe(self.data_storage)
-    def add_data (self, speed, direction, steering_angle, ultrasonic, Infrared):
+    def add_data (self, speed, steering_angle, direction, ultrasonic, Infrared):
         self.data_storage["timestamp"].append(time.time())
         self.data_storage["speed"].append(speed)
         self.data_storage["steering_angle"].append(steering_angle)
@@ -256,9 +256,10 @@ print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
 print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg right > Vbw=low 1sec > repeat to left')
 print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp Vorwärtsfahrt bis Hindernis:')
 print('4: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
-print('5: = Fmod5: Vfw = IR Test')
-print('6: = Fmod6: Vfw = IR Test_analog')
-print('7: = Abbruch')
+print('5: = Fmod5: Vfw = IR -Fahrmodus digital muss überarbeitet werden')
+print('6: = Fmod6: Vfw = IR Fahrmodus analog inkl. Stoppfunktion')
+print('7: = Fmod7: Vfw = IR Fahrmdus wie Fmod6 mit erweiterter Linierverfolgung')
+print('8: = Abbruch')
 while True:
     try:
         fmod = int(input("Bitte Fahrmodus eingeben: "))
@@ -449,10 +450,7 @@ if fmod == 6:
     print('Fahrmodus 6 wird ausgeführt')
     
     x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
-    wd=3
-    w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
-    ibv=500 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
-    ib=ibv #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
+    ir_ref = 25
     while True: 
         # Möglichkeit Schleife zu beenden
         #d=x.tc_dist() #einlesen der distanz aus der Methode
@@ -466,10 +464,10 @@ if fmod == 6:
         #print(d)
         print(f"indexwhile {_index}")
 
-        count_threshold = sum(1 for v in x.infra_ref.read_analog() if v < 25) #Ermittlung Anzahl von Werte unterhal der Schwelle
+        count_threshold = sum(1 for v in x.infra_ref.read_analog() if v < ir_ref) #Ermittlung Anzahl von Werte unterhal der Schwelle
         print(f"count {count_threshold}")
         print(f" red analog {x.infra_ref.read_analog()}")
-        if x._min_analog_value >= 25 or count_threshold == 0:
+        if x._min_analog_value >= ir_ref or count_threshold == 0:
             _index = -1
             x.stop()
             print("Linienverfolgung beendet")
@@ -500,8 +498,89 @@ if fmod == 6:
     x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
     x._data_storage.save_log()  
 
-
 if fmod == 7:
+    x.drive(0, 100)
+    #print(x.digital())
+    x.cali_test()
+    #print(x.digital())
+    time.sleep(3)
+    print('Fahrmodus 7 wird ausgeführt')
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+    ir_ref = 10
+    while True: 
+        # Möglichkeit Schleife zu beenden
+        #d=x.tc_dist() #einlesen der distanz aus der Methode
+        max_ir = x._max_analog_value
+        break_ir = x._break_analog_value
+        _index = x.analog()
+        #print(f"max a x_ {x._break_analog_value}")
+        #print(f" break_a_x. {x._max_analog_value}")
+        #print(f"max a {max_ir}")
+        #print(f" break_a {break_ir}")
+        #print(d)
+        print(f"indexwhile {_index}")
+        Index = []
+        count_threshold = sum(1 for v in x.infra_ref.read_analog() if v < ir_ref) #Ermittlung Anzahl von Werte unterhal der Schwelle
+        print(f"count {count_threshold}")
+        print(f" red analog {x.infra_ref.read_analog()}")
+        if x._min_analog_value >= ir_ref or count_threshold == 0:
+            _index = -1
+            if x.direction == 1:
+                    if x.steering_angle > 90:
+                        x.drive(0, 45)
+                        time.sleep(0.1)
+                        x.drive(-30, 45)
+                        time.sleep(0.3)
+                        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+                    elif x.steering_angle < 90:
+                        x.drive(0, 135)
+                        time.sleep(0.1)
+                        x.drive(-30, 135)
+                        time.sleep(0.3)
+                        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+                    else:
+                        x.drive(-30, 90)
+                        time.sleep(0.4)
+                        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+            
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+            #time.sleep(0.5)
+            print("Linie verloren rückwärts")
+            #time.sleep(1.5)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+                    
+            continue
+            #print("Linienverfolgung beendet")
+            #break
+          
+        if _index == 2: 
+            x.drive(30, x._frontwheels._straight_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+        elif _index == 1:
+            x.drive(30, x.min_left_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())    
+        elif _index == 0:
+            x.drive(20, x._frontwheels._min_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+        elif _index == 3:
+            x.drive(30, x.min_right_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+        elif _index  == 4:
+            x.drive(20, x._frontwheels._max_angle)
+            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+         
+
+        if time.time() - start_zeit >=zeitgrenze:
+            x.stop()
+            print("Time-Exit")
+            print(f"max a {max_ir}")
+            print(f" break_a {break_ir}")
+            break
+    ["Index"].append(_index) 
+    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+    x._data_storage.save_log()  
+
+if fmod == 8:
     print('Abbruch')
     sys.exit()
 
