@@ -258,8 +258,58 @@ class SensorCar(SonicCar):
             if infrared_data_min < 40:
                 t = time.time()
         self.stop()
+    
     def driving_mode_6(self):
+        t = time.time()
+        while (time.time() - t) < 60:
+            timestamp = time.time()
+            infrared_data_analog = self._read_analog(timestamp)
+            infrared_data_digital = self._read_digital(timestamp)
+            infrared_data_min = min(infrared_data_analog)
+            print("p1", infrared_data_analog)
+            if infrared_data_min < 50:
+                break
+            time.sleep(0.5)
+        self.drive(30, 90)
+        t = time.time()
+        t2 = time.time()
+        while (time.time() - t) < 5:
+            print(t, t2)
+            timestamp = time.time()
+            infrared_data_analog = self._read_analog(timestamp)
+            infrared_data_digital = self._read_digital(timestamp)
+            count_threshold = sum(1 for v in infrared_data_analog if v < 50)
+            infrared_data_min = min(infrared_data_analog)
+            min_value_pos = infrared_data_analog.index(infrared_data_min) if infrared_data_min < 40 and count_threshold == 1 else -1
+            print(min_value_pos, infrared_data_min)
+            if count_threshold > 0:
+                t = time.time()
+                t2 = time.time()
+
+            if min_value_pos == 4:
+                self.drive(45, 145)
+            elif min_value_pos == 3:
+                self.drive(45, 112.5)
+            elif min_value_pos == 2:
+                self.drive(45, 90)
+            elif min_value_pos == 1:
+                self.drive(45, 67.5)
+            elif min_value_pos == 0:
+                self.drive(45, 45)
+            
+            time.sleep(0.1)
+            print(min_value_pos)
+            if (time.time() - t2) > 1:
+                if self.direction == 1:
+                    if self.steering_angle > 90:
+                        self.drive(-30, 45)
+                    elif self.steering_angle < 90:
+                        self.drive(-30, 135)
+                    else:
+                        self.drive(-30, 90)
+ 
         pass
+
     def driving_mode_7(self):
         pass
 if __name__ == '__main__':
@@ -267,7 +317,7 @@ if __name__ == '__main__':
     car = SensorCar(forward_A, forward_B, turning_offset, references=[3,3,3,3,3])
     car.stop()
     car.storage = True
-    car.driving_mode_5()
+    car.driving_mode_6()
     car.drive(0,90)
     #car.stop()
     car.save_data('./line_test.csv', overwrite=False)
