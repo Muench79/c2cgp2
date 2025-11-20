@@ -1,4 +1,4 @@
-#pip install dash==2.16.1 dash-bootstrap-components pandas numpy plotly
+#pip install dash==2.15.0 dash-bootstrap-components pandas numpy plotly
 
 import pandas as pd
 from dash import Dash, html, dcc, Input, Output, dash_table
@@ -12,8 +12,8 @@ import threading
 from BaseCar_ds_ir_RM import SensorCar, run_mode                                    # BaseCar Klasse SensorCar und funktion run_mode importieren für Fahrmodusvorgabe
 
 x = SensorCar()                                                                     # Auto-Objekt definieren mit Standardwerten
-
 CSV_PATH = "data_storage.csv"
+
 
 if os.path.exists(CSV_PATH) and os.path.getsize(CSV_PATH) > 0:
     Dashdf = pd.read_csv(CSV_PATH)
@@ -38,8 +38,8 @@ t = (s["timestamp"] - s["timestamp"].iloc[0]).dt.total_seconds().to_numpy()  # (
 v = (s["speed"] * (1000/3600.0)).to_numpy()                    #Umwandlung in m/s  (.to_numpy() wandelt Daten in numpy-Array um (ohne Spaltenname, ohne Index))
 
 # Trapezintegration
-#total_dist = np.trapz(v, t)
-total_dist = np.trapezoid(v, t)                                         # Integration mit Trapezmethode
+total_dist = np.trapz(v, t)
+#total_dist = np.trapezoid(v, t)                                         # Integration mit Trapezmethode
 #print(total_dist, type(total_dist))
 print(f"Zurückgelegte Strecke: {total_dist:.2f} m")
 
