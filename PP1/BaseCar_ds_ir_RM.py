@@ -1,3 +1,4 @@
+
 #from DataStorage import DataStorage
 import click
 import time
@@ -10,30 +11,31 @@ import json
 import os
 import sys
 import csv
-#
-start_zeit = time.time()
-zeitgrenze = 80 
 
-#datastorage_list = []
-##data2 = []
-#datastorageDict = {}
+
 from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic, Infrared
 # Liest nur die ausgewählten Basisklassen ein
-#Die basisklassen.py wird nicht editiert
-#Notwendigen Klassen werden importiert und mit einem Hinweis versehen. 
+# Die basisklassen.py wird nicht editiert!!
+# Notwendigen Klassen werden importiert und mit einem Hinweis versehen. 
 
 '''
-Nutzung der Classen front 
-Zeile 226  
-class FrontWheels(object) 
-Lenkwinkel
-Backwheels Zeile 309
-class BackWheels(object): 
-Steuert die Motoren an
-
-Initiale Einlesung der config.jason für übergabe der Startwerte Lenkwinkel ggf. Drehrichtung Raeder
+Import von Klassen aus der basisklassen.py
+    > Nutzung der Classen front 
+    > Zeile 226  
+    >class FrontWheels(object) 
+    > Lenkwinkel
+    > Backwheels Zeile 309
+    > class BackWheels(object): 
+    > Steuert die Motoren an
 '''
+'''
+Einlesen config.sys
+   > Initiale Einlesung der config.jason für übergabe der Startwerte Lenkwinkel ggf. Drehrichtung Raeder
+'''
+
+
 try:
+# Beginn einlesen config.json für Setzung Startwerte und Offsets
     with open("config.json", "r") as f:
         data = json.load(f)
         turning_offset = data["turning_offset"]
@@ -49,18 +51,15 @@ except:
     forward_A = 0
     forward_B = 0
 
-# Klasse BaseCar wird erstellt und ziehen uns die Werte forward_A,B turning_offset 
-# damit erstellen wir zwei Objekt self._backwheels und self._frontwheels und 
-# verbknüpfen diese mit den Parametern forward_A,B und turning_offset
-#class cali_ref (Infrared):
-#    def cali_test(self):
-#        Infrared.cali_references(self)
-#        return Infrared.cali_references
+
 class data_storage():
-    def __init__(self): # self wichtig um aus der Klasse ein Objekt machen mit eigener speicherung 
+# Klasse data_storage zur Speicherung und Protokollierung der Fahrdaten in einer Log-File
+    def __init__(self): 
+    # self wichtig um aus der Klasse ein Objekt machen mit eigener Speicherung in ein Dictionary welches einzelne Liste der Parameter enthält
         self.data_storage = {"timestamp":[],"speed":[], "steering_angle": [], "direction":[], "ultrasonic":[], "Infrared":[]}
      
-    def drive_parkour_1(self):#Test der Funktionen
+    def drive_parkour_1(self):
+    # def drive_parkour Test der Funktionen zum schreiben des Datenspeichers
         for i in range(20):
             self.data_storage["timestamp"].append(i)
             self.data_storage["speed"].append(i)
@@ -70,6 +69,7 @@ class data_storage():
             self.data_storage["Infrared"].append(i)
 #        df = pd.Dataframe(self.data_storage)
     def add_data (self, speed, steering_angle, direction, ultrasonic, Infrared):
+    # add_Data fügt Daten in die jeweilgen Listen zur Speicherung des Log-Files 
         self.data_storage["timestamp"].append(time.time())
         self.data_storage["speed"].append(speed)
         self.data_storage["steering_angle"].append(steering_angle)
@@ -77,27 +77,41 @@ class data_storage():
         self.data_storage["ultrasonic"].append(ultrasonic)
         self.data_storage["Infrared"].append(Infrared) 
     def save_log(self):
+    # Schreib die gespeicherten Daten aus dem Dict (mit Inhalt Listen in die Datei data_storage.csv)
         df = pd.DataFrame.from_dict(self.data_storage)
         df.to_csv("data_storage.csv", index=False)
 
-#,columns= self.data_storage.keys()
 
 
+# Klasse BaseCar wird erstellt und ziehen uns die Werte forward_A,B turning_offset 
+# damit erstellen wir zwei Objekt self._backwheels und self._frontwheels und 
+# verbknüpfen diese mit den Parametern forward_A,B und turning_offset
+#class cali_ref (Infrared):
+#    def cali_test(self):
+#        Infrared.cali_references(self)
+#        return Infrared.cali_references
 class BaseCar():
+    '''
+    Klasse BaseCar wird erstellt und übernimmt die Werte forward_A,B turning_offset 
+    Anschließend werden die Objekte self._backwheels und self._frontwheels erstellt und 
+    verbknüpfen diese mit den Parametern forward_A,B und turning_offset
+    '''
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
         self._backwheels = BackWheels(forward_A, forward_B)
         self._frontwheels = FrontWheels(turning_offset)
         self._data_storage = data_storage()
-        self._steering_angle = None # Selbstdefiniere Variable in der der Lenkwinkel gespeichert wird - Anfangbedingung None weil kein Winkel bekannt
-        self._direction = None # Selbstdefiniere Variable in der der Richtung gespeichert wird - Anfangbedingung None weil kein Richtung bekannt
+        self._steering_angle = None # Selbstdefiniere Variable in der der Lenkwinkel gespeichert wird - Anfangsbedingung None weil kein Winkel bekannt
+        self._direction = None # Selbstdefiniere Variable in der der Richtung gespeichert wird - Anfangsbedingung None weil kein Richtung bekannt
         print("OK")
     
 
     @property
     def speed(self):
-        return self._backwheels.speed #holt sich die aktuelle Geschw. von der Kl. backwheels und gibt diese zurück
+        #holt sich die aktuelle Geschw. von der Kl. backwheels und gibt diese zurück
+        return self._backwheels.speed 
 
     @speed.setter
+    # Setzt die Geschwindigkeit und ermittelt die Fahrtrichtung
     def speed(self, new_speed : int):
         if new_speed < 0:
             self._backwheels.backward()
@@ -109,32 +123,36 @@ class BaseCar():
             new_speed = 100
         elif new_speed < -100:
             new_speed = -100
-            #self._datastorage.adddata('speed', new_speed)
-        self._backwheels.speed = abs(new_speed) #negative Werte der geschwindigkeit werden pos. gespeichert - Vorbereitung Datastorage
+            self._backwheels.speed = abs(new_speed) #negative Werte der Geschwindigkeit werden pos. gespeichert - Vorbereitung Datastorage
 
     @property
     def steering_angle(self):
-        return self._steering_angle #Ausgabe aktueller Lenkwinkel Variable ist selbt gewählt siehe Zeile 53
+        #Ausgabe aktueller Lenkwinkel Variable ist selbst gewählt und in Zeile 103 BasisClasse initialisiert (self)
+        return self._steering_angle 
     
     @steering_angle.setter
     def steering_angle(self, new_steering_angle):
+        # Setzen des neuen Lenkwinkels 
         self._steering_angle = self._frontwheels.turn(new_steering_angle)
         print(self._steering_angle)
 
     @property
     def direction(self):
+        #Richtungsrückgabe wenn Geschw.=0 ist die Richtung 0 = stehen, direction = 1 Vowärtsfahrt, direction = -1 Rückwärts
         if self._backwheels.speed == 0: #Richtungsrückgabe wenn Geschw. =0 ist die Richtung 0 = stehen
             return 0
         else:
             return self._direction  #Definition in Speed-Setter  
     
     def drive(self, new_speed : int = None , new_steering_angle : int = None ):
+        # Vorgabe der Geschwindigkeit und Lenkwinkel für späteren Funktionsaufruf in den Fahrmodi 
         if not (new_speed is None):
             self.speed = new_speed
         if not (new_steering_angle is None):
             self.steering_angle = new_steering_angle
     
     def stop(self):
+        # Stoppfunktion setzt V=0 und Lenkwinkel auf 90°
         self._backwheels.stop()
         self.steering_angle = 90
 
@@ -187,8 +205,8 @@ class SensorCar(SonicCar):
         min_analog_value = min(new_analog)
         #min_analog_value
         min_analog_index = list(new_analog).index(min_analog_value) 
-        print(new_digital[0])
-        print(min_analog_index)
+        #print(new_digital[0])
+        #print(min_analog_index)
         return list(new_digital)  #Return übergibt ausgabe Wert der MEthode. Dieser kann dann durch den aufruf x.digial usw abgefragt werden
     
     
@@ -198,11 +216,11 @@ class SensorCar(SonicCar):
         min_analog_index = list(new_analog).index(self._min_analog_value) 
         self._break_analog_value = self._min_analog_value * 2
         self._max_analog_value = max(new_analog)
-        print(f"{new_analog} new_analog meth_analog")
-        print(f"{min_analog_index} min_analog_Index")
-        print(f"{self._min_analog_value} min analog_value")
-        print(f"break_analog_value {self._break_analog_value}")
-        print(f"max_analog_value {self._max_analog_value}")
+        #print(f"{new_analog} new_analog meth_analog")
+        #print(f"{min_analog_index} min_analog_Index")
+        #print(f"{self._min_analog_value} min analog_value")
+        #print(f"break_analog_value {self._break_analog_value}")
+        #print(f"max_analog_value {self._max_analog_value}")
         return min_analog_index
     
     
@@ -224,7 +242,7 @@ x = SensorCar(forward_A, forward_B, turning_offset)
 #print(f"Index = {_index}")
 x.car_distance()
 s=data_storage()
-#c=cali_ref()
+
 #data_storage = {"timestamp":[],"speed":[], "direction": [], "steering_angle":[], "ultrasonic":[]}
 
 #df = pd.Dataframe(data_storage)
@@ -252,16 +270,18 @@ s=data_storage()
 #x = BaseCar(forward_A, forward_B, turning_offset) #Ist die Intanz der Klasse BaseCar
 
 
-def run_mode(fmod: int, x: SensorCar):                                                          #ausführbare Funktion definieren, um im Dashboard aufzurufen 
+def run_mode(fmod: int, x: SensorCar):  
+    start_zeit = time.time()
+    zeitgrenze = 80                                                         #ausführbare Funktion definieren, um im Dashboard aufzurufen 
     """ Es wäre auch möglich def run_mode(fmod, x): zu schreiben. Int und SensorCar sind nur Hinweise für den Programmierer dass fmod eine ganzzahl sein muss und x ein 
         Objekt der Kalsse SensorCar sein muss    """
     if fmod == 1:
         print('Fahrmodus 1 wird ausgeführt')
         x.drive(25, x._frontwheels._straight_angle)
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(3)
         x.drive(-25, x._frontwheels._straight_angle)  # uebergibt nur die Geschwindigkeit
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(3)
         x.stop()
         x._data_storage.save_log()
@@ -271,32 +291,32 @@ def run_mode(fmod: int, x: SensorCar):                                          
         print('Fahrmodus 2 wird ausgeführt')
         # fahrmodus rechts
         x.drive(20, x._frontwheels._straight_angle) #
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(1)
         x.drive(20, x._frontwheels._max_angle )  #[self._max_angle]???
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(8)
         x.stop()
         x.drive(-20, x._frontwheels._max_angle)
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(8)
         x.drive(-20, x._frontwheels._straight_angle)
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(1)
         x.stop()
         # fahrmodus links
         x.drive(20, x._frontwheels._straight_angle) #
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(1)
         x.drive(20, x._frontwheels._min_angle)  #[self._max_angle]???
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(8)
         x.stop()
         x.drive(-20, x._frontwheels._min_angle)
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(8)
         x.drive(-20, x._frontwheels._straight_angle)
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         time.sleep(1)
         x.stop()
         x._data_storage.save_log()
@@ -304,7 +324,7 @@ def run_mode(fmod: int, x: SensorCar):                                          
     if fmod == 3:
         print('Fahrmodus 3 wird ausgeführt')
         x.drive(45, x._frontwheels._straight_angle)
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
         w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
         while True: 
@@ -327,7 +347,7 @@ def run_mode(fmod: int, x: SensorCar):                                          
         print('Fahrmodus 4 wird ausgeführt')
         x.drive(45, x._frontwheels._straight_angle)
         #s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
-        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
         w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
         while True: 
@@ -339,11 +359,11 @@ def run_mode(fmod: int, x: SensorCar):                                          
             elif d >= 15: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
                 x.drive(45, x._frontwheels._straight_angle)
                 w=wd     
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())   
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog()) 
             elif d in range(8, 15):
     #           w=wd
                 x.drive(20, x._frontwheels._straight_angle)
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
             elif d < 8: 
                 w=w-1
                 if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
@@ -351,15 +371,15 @@ def run_mode(fmod: int, x: SensorCar):                                          
                     while x.tc_dist() < 10:
                         time.sleep(2)
                         x.drive(-25, x._frontwheels._max_angle) #max_angle = 135 Grad rechts
-                        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+                        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
                     x.stop()
                     time.sleep(2)
                     x.drive(45, x._frontwheels._straight_angle)
-                    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+                    x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
                     print("Ende", d)
             if time.time() - start_zeit >=zeitgrenze:
                 x.stop()
-                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist())
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
                 print("Exit")
                 break
         x._data_storage.save_log()  
@@ -561,34 +581,124 @@ def run_mode(fmod: int, x: SensorCar):                                          
                 x.drive(20, x._frontwheels._max_angle)
                 x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
             
-
             if time.time() - start_zeit >=zeitgrenze:
                 x.stop()
                 print("Time-Exit")
                 #print(f"max a {max_ir}")
                 #print(f" break_a {break_ir}")
                 break
+            
         ["Index"].append(_index) 
         x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
         x._data_storage.save_log()  
 
     if fmod == 8:
+        x.drive(0, 100)
+        wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
+        w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
+        #print(x.digital())
+        #x.cali_test()
+        #print(x.digital())
+        time.sleep(3)
+        print('Fahrmodus 7 wird ausgeführt')
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+        #ir_ref = 10 Wieder einkommentieren wenn threshold nicht Funktionsfähig
+
+        while True: 
+            #Möglichkeit Schleife zu beenden
+            d=x.tc_dist() #einlesen der distanz aus der Methode
+            print(f" Abstand {d}")
+            print(f" Fehlerschleife {w}")
+            #ir_ref = (x._max_analog_value + x._min_analog_value) / 2
+            ir_ref = (np.mean(x.infra_ref.read_analog())) * 0.85
+            #print(f"ir_ref {ir_ref}")
+            _index = x.analog()
+            #print(f"indexwhile {_index}")
+            count_threshold = sum(1 for v in x.infra_ref.read_analog() if v < ir_ref) #Ermittlung Anzahl von Werte unterhal der Schwelle
+            #print(f"count {count_threshold}")
+            #print(f" red analog {x.infra_ref.read_analog()}")
+            if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
+                pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
+            elif d >= 10: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
+                w=wd     
+                pass
+            elif d < 8: 
+                w=w-1
+                if w <= 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
+                    x.stop()
+                    time.sleep(5.0)
+            if x._min_analog_value >= ir_ref or count_threshold == 0:
+                _index = -1
+                if x.direction == 1:
+                        if x.steering_angle > 90:
+                            x.drive(0, 45)
+                            time.sleep(0.1)
+                            x.drive(-30, 45)
+                            time.sleep(0.3)
+                            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+                        elif x.steering_angle < 90:
+                            x.drive(0, 135)
+                            time.sleep(0.1)
+                            x.drive(-30, 135)
+                            time.sleep(0.3)
+                            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+                        else:
+                            x.drive(-30, 90)
+                            time.sleep(0.4)
+                            x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+                # 
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+                #time.sleep(0.5)
+                print("Linie verloren rückwärts")
+                #time.sleep(1.5)
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+                        
+                continue
+                #print("Linienverfolgung beendet")
+                #break
+            
+            if _index == 2: 
+                x.drive(30, x._frontwheels._straight_angle)
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+            elif _index == 1:
+                x.drive(30, x.min_left_angle)
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())    
+            elif _index == 0:
+                x.drive(20, x._frontwheels._min_angle)
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+            elif _index == 3:
+                x.drive(30, x.min_right_angle)
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+            elif _index  == 4:
+                x.drive(20, x._frontwheels._max_angle)
+                x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+            
+            if time.time() - start_zeit >=zeitgrenze:
+                x.stop()
+                print("Time-Exit")
+                break
+           
+        ["Index"].append(_index) 
+        x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
+        x._data_storage.save_log()  
+
+    if fmod == 9:
         print('Abbruch')
         sys.exit()
 
-    while True:
-        try:
-            fmod = int(input("Für Abbruch Bitte die 7: "))
-            break
-        except ValueError:
-            print("Bitte eine gültige Ganzzahl eingeben.")
+    #while True:
+    #    try:
+    #        fmod = int(input("Für Abbruch Bitte die 9: "))
+    #        break
+    #    except ValueError:
+    #        print("Bitte eine gültige Ganzzahl eingeben.")
    
 
 
 if __name__ == "__main__":                                                                      # Konsolenausführung in if-Schleife kapseln, damit sie nicht vom Dash-Board aufgerufen werden kann
     #nur wenn das Skript direkt gestartet wird vergibt Python dem Modul den Namen __name__ == "__main__"
     #wird das Skript jedoch geladen setzt python __name__ == "BaseCar_ds_ir"  --> Konsolenausführung wird nicht aufgerufen
-    x = SensorCar(forward_A, forward_B, turning_offset)
+    #x = SensorCar(forward_A, forward_B, turning_offset)
 
     print('-- Waehle eine Fahrmodus aus--')
     print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
@@ -598,7 +708,8 @@ if __name__ == "__main__":                                                      
     print('5: = Fmod5: Vfw = IR -Fahrmodus digital muss überarbeitet werden')
     print('6: = Fmod6: Vfw = IR Fahrmodus analog inkl. Stoppfunktion')
     print('7: = Fmod7: Vfw = IR Fahrmdus wie Fmod6 mit erweiterter Linierverfolgung')
-    print('8: = Abbruch')
+    print('8: = Fmod8: Vfw = IR Fahrmdus wie Fmod7 mit Stoppfunktion')
+    print('9: = Abbruch')
 
     # Deine Eingabeschleife kannst du 1:1 behalten:
     while True:

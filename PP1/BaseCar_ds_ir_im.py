@@ -12,7 +12,7 @@ import sys
 import csv
 #
 start_zeit = time.time()
-zeitgrenze = 80 
+zeitgrenze = 90
 
 #datastorage_list = []
 ##data2 = []
