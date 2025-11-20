@@ -95,23 +95,22 @@ class BaseCar():
     Klasse BaseCar wird erstellt und übernimmt die Werte forward_A,B turning_offset 
     Anschließend werden die Objekte self._backwheels und self._frontwheels erstellt und 
     verbknüpfen diese mit den Parametern forward_A,B und turning_offset
-    '''
+    '''    
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
         self._backwheels = BackWheels(forward_A, forward_B)
         self._frontwheels = FrontWheels(turning_offset)
         self._data_storage = data_storage()
-        self._steering_angle = None # Selbstdefiniere Variable in der der Lenkwinkel gespeichert wird - Anfangsbedingung None weil kein Winkel bekannt
-        self._direction = None # Selbstdefiniere Variable in der der Richtung gespeichert wird - Anfangsbedingung None weil kein Richtung bekannt
+        self._steering_angle = None # Selbstdefiniere Variable in der der Lenkwinkel gespeichert wird - Anfangbedingung None weil kein Winkel bekannt
+        self._direction = None # Selbstdefiniere Variable in der der Richtung gespeichert wird - Anfangbedingung None weil kein Richtung bekannt
         print("OK")
     
 
     @property
     def speed(self):
-        #holt sich die aktuelle Geschw. von der Kl. backwheels und gibt diese zurück
-        return self._backwheels.speed 
+        return self._backwheels.speed #holt sich die aktuelle Geschw. von der Kl. backwheels und gibt diese zurück
+
     @speed.setter
     def speed(self, new_speed : int):
-        # Setzt die Geschwindigkeit und ermittelt die Fahrtrichtung
         if new_speed < 0:
             self._backwheels.backward()
             self._direction = -1 #Wenn die geschw. negativ ist dann wird self._direction auf -1 gesetzt für spätere Richtungserkennung sinnvoll
@@ -122,44 +121,38 @@ class BaseCar():
             new_speed = 100
         elif new_speed < -100:
             new_speed = -100
-        #self._backwheels.speed muss immer gesetzt sein (gleiche Zeilenposition wie elif bzw. IF)
-        self._backwheels.speed = abs(new_speed) #negative Werte der Geschwindigkeit werden pos. gespeichert - Vorbereitung Datastorage
-        #
+            #self._datastorage.adddata('speed', new_speed)
+        self._backwheels.speed = abs(new_speed) #negative Werte der geschwindigkeit werden pos. gespeichert - Vorbereitung Datastorage
 
     @property
     def steering_angle(self):
-        #Ausgabe aktueller Lenkwinkel Variable ist selbst gewählt und in Zeile 103 BasisClasse initialisiert (self)
-        return self._steering_angle 
+        return self._steering_angle #Ausgabe aktueller Lenkwinkel Variable ist selbt gewählt siehe Zeile 53
     
     @steering_angle.setter
     def steering_angle(self, new_steering_angle):
-        # Setzen des neuen Lenkwinkels 
         self._steering_angle = self._frontwheels.turn(new_steering_angle)
         print(self._steering_angle)
 
     @property
     def direction(self):
-        #Richtungsrückgabe wenn Geschw.=0 ist die Richtung 0 = stehen, direction = 1 Vowärtsfahrt, direction = -1 Rückwärts
         if self._backwheels.speed == 0: #Richtungsrückgabe wenn Geschw. =0 ist die Richtung 0 = stehen
             return 0
         else:
             return self._direction  #Definition in Speed-Setter  
     
     def drive(self, new_speed : int = None , new_steering_angle : int = None ):
-        # Vorgabe der Geschwindigkeit und Lenkwinkel für späteren Funktionsaufruf in den Fahrmodi 
         if not (new_speed is None):
             self.speed = new_speed
         if not (new_steering_angle is None):
             self.steering_angle = new_steering_angle
     
     def stop(self):
-        # Stoppfunktion setzt V=0 und Lenkwinkel auf 90°
         self._backwheels.stop()
         self.steering_angle = 90
 
 class SonicCar(BaseCar):
-    #Initialisierung Sonicar bezogen auf die Eltern-Klasse Basecar
-    #Implemntierung von <ultraschallsensoren aus der Ultrasonic Klasse aus basisklassen.py
+#Initialisierung Sonicar bezogen auf die Eltern-Klasse Basecar
+#Implemntierung von <ultraschallsensoren aus der Ultrasonic Klasse aus basisklassen.py
     def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
        super().__init__(forward_A, forward_B, turning_offset)
        self.ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout) #Verbindung zu Ultrasonic aus Basisklassen
@@ -518,7 +511,7 @@ def run_mode(fmod: int, x: SensorCar):
         '''
         x.drive(0, 100)
         #print(x.digital())
-        #x.cali_test()
+        x.cali_test()
         #print(x.digital())
         time.sleep(3)
         print('Fahrmodus 7 wird ausgeführt')

@@ -1,0 +1,4 @@
+Parameter count_threshold in über Dash addjustierbar mit einem defaultwert 
+Geschwindigkeit muss änderbarsein wegen unterschiedlichen Motoren
+ggf. Bei der Vorwärtsfahrt nach Rückwärtskorrektur erst Lenkeinschlag vornehmen. 
+Äußere Kurvenfahrt ggf. mit Zeitmessung aktuell teilweise über der Linie

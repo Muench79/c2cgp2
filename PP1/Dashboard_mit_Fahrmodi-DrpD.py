@@ -1,9 +1,8 @@
 #pip install dash==2.15.0 dash-bootstrap-components pandas numpy plotly
 
 import pandas as pd
-from dash import Dash, html, dcc, Input, Output, dash_table
+from dash import Dash, html, dcc, Input, Output, dash_table, State
 import dash_bootstrap_components as dbc
-from dash.dependencies import Input, Output, State
 import plotly.express as px
 import numpy as np
 import os
@@ -64,8 +63,8 @@ total_time_sec = time_delta.total_seconds()
 #print(fmt_time(total_time_sec))  # z.B. 00:00:20
 
 
-    # ----Dash App erzeugen----
-app = Dash(__name__, external_stylesheets=[dbc.themes.SPACELAB])
+# ----Dash App erzeugen----
+app = Dash(__name__, external_stylesheets=[dbc.themes.SPACELAB]) # 
 
 card_style = {                                              # Stil der Karten vorgeben
     "border": "1px solid #ddd",
@@ -87,6 +86,7 @@ fig.update_layout(title={   "x": 0.5,               # Titel ausrichten  0 = link
 # Dashboard ist in einzelne Bereiche aufgeteilt (Fahrmodus, Felder , Graphen, Dropdown für Fahrmodus)
 app.layout = html.Div([                                                         # zentriert       #Schriftgröße     #schriftart kursiv      Zeilenabstand oben/unten
                     html.Div([dbc.Row([html.H3("Fahrdaten – KPIs", id="h-1", style={"textAlign": "center", "fontSize": "42px", "fontStyle": "italic", "margin": "16px 0"})]),
+
                     html.Div([                                                                           # Division für Dropdown Fahrmodusauswahl
                         dcc.Dropdown(                                                                    # Dropdown
                             id="drpd-1",options=[  {"label": "Fahrmodus 1", "value": "1"},               # label definiert den Anzeigenamen im Dropdown
@@ -109,6 +109,7 @@ app.layout = html.Div([                                                         
                                     "marginBottom": "8px"},
                         ),
                         # Ausrichtung längsausrichtung der Kacheln über dbc 6x6 Feldgröße
+                        
                         dbc.Row([
                                 dbc.Col(html.Div([
                                     html.Div("Min Speed [m/s]", style={"color": "#666", "fontSize": "14px"},),
@@ -140,7 +141,7 @@ app.layout = html.Div([                                                         
                     html.Div([
                         html.Div(                          # Dropdown oben rechts über dem Diagramm
                             dcc.Dropdown(
-                                id="drpd-2",options=[  {"label": "Geschwindigkeit [m/s]", "value": "speed"},                    # label definiert den Anzeigenamen im Dropdown
+                                id="drpd-2",options=[  {"label": "Geschwindigkeit [m/s]", "value": "speed"},                    # label definiert den Anzeigenamen im Dropdown, Die spaltnformtierung der CSV Datei darf nicht verändert werden
                                                         {"label": "Lenkwinkel [Grad]", "value": "steering_angle"},              # Value definiert den Wert, der übergeben wird an die Callbackfunktion
                                                         {"label": "Fahrtrichtung [-]", "value": "direction"},
                                                         {"label": "Abstand z. Hinderniss [-]", "value": "ultrasonic"}, 
@@ -159,11 +160,14 @@ app.layout = html.Div([                                                         
 # Ende der Seite bzw. Formatdefinition
 
 @app.callback(                                                                      # callback Fahrmodus
+
     Output("fahrmodus_status", "children"),                                          # Children muss angegeben werden damit der Output funktioniert
     Input("drpd-1", "value"),
     prevent_initial_call=True,                                                       #Nicht den ersten Wert verwenden Bsp. Überschrift als Platzhalter 
 )
-def start_fahrmodus(value):                 
+
+def start_fahrmodus(value):  # Nicht Updaten wenn Funktion aktiv ist
+
     if value is None or value == "0":
         raise PreventUpdate                                                         # Nicht Updaten wenn Funktion aktiv ist
 
@@ -187,14 +191,13 @@ def start_fahrmodus(value):
             Input("drpd-2", "value"),                                   # Wert von Callback erfragen
             Input("int-1", "n_intervals"),                              # ➜ triggert alle 5 s das Callback
             State("drpd-2", "options")                                  # zusätzlich dir Options aus Zeile 85 bis 88 übergeben                               
-    )
+)
 
 
-def update_graph_kpis(sel_value, n_intervals, options):                  # mit dieser Zeile wird Wert von Dropdown an sel_value übergeben
-                                                               
-    Dashdf = load_data()                                            # CSV jedes Mal frisch einlesen
-    if Dashdf.empty:                                                # leere Datei → nichts ändern
-        raise PreventUpdate                                         #  Alles, was nach raise PreventUpdate kommt, wird NICHT mehr ausgeführt.(Dash versteht es so: „Callback ist gelaufen, aber Outputs bitte nicht anfassen)
+def update_graph_kpis(sel_value, n_intervals, options):                  # mit dieser Zeile wird Wert von Dropdown an sel_value übergeben                                                          
+    Dashdf = load_data()                                                # CSV jedes Mal frisch einlesen
+    if Dashdf.empty:                                                    # leere Datei → nichts ändern
+        raise PreventUpdate                                             #  Alles, was nach raise PreventUpdate kommt, wird NICHT mehr ausgeführt.(Dash versteht es so: „Callback ist gelaufen, aber Outputs bitte nicht anfassen)
         
 
     #--------------- KPIs neu berechnen------------------------------------------------
