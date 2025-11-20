@@ -192,9 +192,9 @@ def start_fahrmodus(value):
 
 def update_graph_kpis(sel_value, n_intervals, options):                  # mit dieser Zeile wird Wert von Dropdown an sel_value übergeben
                                                                
-        Dashdf = load_data()                                            # CSV jedes Mal frisch einlesen
-        if Dashdf.empty:                                                # leere Datei → nichts ändern
-            raise PreventUpdate                                         #  Alles, was nach raise PreventUpdate kommt, wird NICHT mehr ausgeführt.(Dash versteht es so: „Callback ist gelaufen, aber Outputs bitte nicht anfassen)
+    Dashdf = load_data()                                            # CSV jedes Mal frisch einlesen
+    if Dashdf.empty:                                                # leere Datei → nichts ändern
+        raise PreventUpdate                                         #  Alles, was nach raise PreventUpdate kommt, wird NICHT mehr ausgeführt.(Dash versteht es so: „Callback ist gelaufen, aber Outputs bitte nicht anfassen)
         
 
     #--------------- KPIs neu berechnen------------------------------------------------
