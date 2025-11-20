@@ -217,7 +217,8 @@ class SensorCar(SonicCar):
 
 #timestamp,speed,steering_angle,direction,distance
 # Datenaufzeichnung und Speicherung   
-#x = SonicCar(forward_A, forward_B, turning_offset)
+#8
+
 x = SensorCar(forward_A, forward_B, turning_offset)
 #_array, _index = x.digital()
 #print(f" test_analog_W1_W {_array, _index}")
