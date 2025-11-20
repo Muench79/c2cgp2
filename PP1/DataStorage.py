@@ -4,6 +4,8 @@ import os
 import logging
 from typing import Union
 
+__version__ = "1.0.0b"
+
 # Create logger
 logger = logging.getLogger(__name__)
 
@@ -27,21 +29,23 @@ def log_message(level, message, **kwargs):
         logger.info(f"Unbekannter Loglevel '{level}': {full_message}")
 
 
-class DataStorage():
-    """A class for data storage
+class DataStorage(): 
+    """A class for data storage.
 
-    Attributes:
-        __file_ext (tuple): Includes the supported file formats
-        storage (bool): Activates data storage
+        Attributes:
+            VERSION (str): Version of the DataStorage class
+            storage (bool): Activates data storage
     """
+    VERSION = __version__
     __file_ext = ('.csv', '.json') # supported file formats
     
     def __init__(self, storage : bool = True) -> None:
-        """Initializes the data storage
-        Args:
-            storage (bool, optional): Whether data storage should be enabled.
-                True (default) - Enable data storage
-                False          - Disable data storage
+        """Initializes the data storage.
+
+            Args:
+                storage (bool, optional): Whether data storage should be enabled.
+                    True (default) - Enable data storage
+                    False          - Disable data storage
         """
         log_message("DEBUG", 'Create DataStorage object')
         self._data = {} 
@@ -49,10 +53,11 @@ class DataStorage():
         self._storage = storage
 
     def add_data(self, key : (str), value : Union[int, float], timestamp : (float) = None) -> None:
-        """Adds data to the data store.
-        Args:
-            key (str): key of value
-            value (int, float): value of the key
+        """Adds key value data to the data store.
+
+            Args:
+                key (str): key of value
+                value (int, float): value of the key
         """
         if not timestamp:
             timestamp = time.time()
@@ -66,17 +71,19 @@ class DataStorage():
                 log_message("DEBUG", 'Add data: ', Key = key, Data = (timestamp, value))
     
     def get_data(self) -> dict:
-        """
-        Returns:
-            dict: all saved data
+        """Returns the stored data.
+
+            Returns:
+                dict: all saved data
         """
         log_message("DEBUG", 'get_data(): Return self._data', data = self._data)
         return self._data
 
     def get_keys(self) -> tuple:
-        """
-        Returns:
-            tuple: all existing keys
+        """Returns all keys of the stored data.
+
+            Returns:
+                tuple: all existing keys
         """
         log_message("DEBUG", 'get_keys(): Return self._data.keys())', keys = self._data.keys())
         return tuple(self._data.keys())
@@ -89,7 +96,7 @@ class DataStorage():
         self._data_prepared = []
     
     def _data_preparation(self) -> None:
-        """Preparing the data for further processing (saving it to a file)
+        """Preparing the data for further processing (saving it to a file).
         """
         self._data_prepared = []
         for k, v in self._data.items():
@@ -100,7 +107,7 @@ class DataStorage():
         log_message("DEBUG", '_data_preparation(): ', data_count = len(self._data_prepared))
         
     def _data_to_csv(self) -> str:
-        """Converts the data to csv format
+        """Converts the data to csv format.
 
             Returns:
                 str: data in csv format
@@ -130,7 +137,7 @@ class DataStorage():
             return linehead + '\n' + linescsv
         
     def _save_data_json(self, path : str) -> int:
-        """Saves the data to a file in json format and returns -1 in case of an error
+        """Saves the data to a file in json format and returns -1 in case of an error.
 
             Args:
                 path (str): File path
@@ -150,7 +157,7 @@ class DataStorage():
         return 0
     
     def _save_data_csv(self, path):
-        """Saves the data to a file in csv format and returns -1 in case of an error
+        """Saves the data to a file in csv format and returns -1 in case of an error.
 
             Args:
                 path (str): File path
@@ -169,7 +176,7 @@ class DataStorage():
         return 0
 
     def save_data(self, path, format : str = '' , overwrite : bool = False) -> int:
-        """Saves the data to a file and returns -1 and returns detailed information
+        """Saves the data to a file and returns -1 and returns detailed information.
 
             Args:
                 path (str): File path
@@ -249,25 +256,21 @@ class DataStorage():
 
     @property
     def storage(self) -> bool:
-        """Query the data storage state
-        Returns:
-            bool: True  (Data storage is active)
-                  False (Data storage is not active. Therefore, no data is being recorded)
+        """Query the data storage state.
+
+            Returns:
+                bool: True  (Data storage is active)
+                      False (Data storage is not active. Therefore, no data is being recorded)
         """
         log_message("DEBUG", 'storage (getter): Return self._storage)', storage = self._storage)
         return self._storage
     
     @storage.setter
     def storage(self, x : bool) -> None:
-        """Changes the state of data storage (True  (Data storage is active), False (Data storage is not active. Therefore, no data is being recorded))
+        """Changes the state of data storage (True - Data storage is active), (False - Data storage is not active). Therefore, no data is being recorded.
         """
         self._storage = x
         log_message("DEBUG", 'storage (setter): Set self._storage)', storage = self._storage)
 
 if __name__ == '__main__':
-    help(DataStorage)
-    x = DataStorage()
-    x.add_data("Test", 9)
-    x.add_data("Test", 10)
-    x.save_data('tt.json')
     pass

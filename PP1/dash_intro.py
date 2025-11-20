@@ -3,6 +3,33 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import sys
 
+
+
+df = pd.read_csv('line_test_2025-11-19_07-01-54.csv')
+df["time"] = pd.to_datetime(df["time"], unit="s")
+df["time_ms"] = (df["time"] - df["time"].iloc[0]).dt.total_seconds()
+
+print(df["time"].dtype)
+
+df_speed = df[['time_ms', 'speed']]
+df_speed = df_speed.dropna()
+df_infrared_analog_0 = df[['time_ms', 'infrared_analog_0']]
+df_infrared_analog_0 = df_infrared_analog_0.dropna()
+df_infrared_analog_1 = df[['time_ms', 'infrared_analog_1']]
+df_infrared_analog_1 = df_infrared_analog_1.dropna()
+df_infrared_analog_2 = df[['time_ms', 'infrared_analog_2']]
+df_infrared_analog_2 = df_infrared_analog_2.dropna()
+df_infrared_analog_3 = df[['time_ms', 'infrared_analog_3']]
+df_infrared_analog_3 = df_infrared_analog_3.dropna()
+df_infrared_analog_4 = df[['time_ms', 'infrared_analog_4']]
+df_infrared_analog_4 = df_infrared_analog_4.dropna()
+df_steering_angle = df[['time_ms', 'steering_angle']]
+df_steering_angle = df_steering_angle.dropna()
+drive_time = df_speed["time_ms"].iloc[-1] - df_speed["time_ms"].iloc[0]
+
+
+
+
 df = pd.read_csv('line_test_2025-11-18_10-00-38.csv')
 df_speed = df[['time', 'speed']].dropna()
 print("ok")
