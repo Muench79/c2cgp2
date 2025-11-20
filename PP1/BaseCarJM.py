@@ -73,7 +73,7 @@ class BaseCar():
             storage (bool): Activates data storage
     """
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0) -> None:
-        """Initializes the data storage.
+        """Initializes the BaseCar.
         
             Args:
                 forward_A (int): 0,1 (Configuration of the rotation direction of a motor). Defaults to 0.
@@ -244,10 +244,9 @@ class SonicCar(BaseCar):
     """A class for controlling a car and an ultrasonic sensor.
     """
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
-        """Initializes the data storage.
+        """Initializes the SonicCar.
 
             Args:
-                Args:
                 forward_A (int): 0,1 (Configuration of the rotation direction of a motor). Defaults to 0.
                 forward_B (int): 0,1 (Configuration of the rotation direction of the other motor). Defaults to 0.
                 turning_offset (int): Offset used to calculate the angle. Defaults to 0.
@@ -324,32 +323,63 @@ class SonicCar(BaseCar):
         self.stop()
 
 class SensorCar(SonicCar):
+    """A class for controlling a car, an ultrasonic sensor, and an infrared sensor.
+    """
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
+        """Initializes the SensorCar.
+
+            Args:
+                forward_A (int): 0,1 (Configuration of the rotation direction of a motor). Defaults to 0.
+                forward_B (int): 0,1 (Configuration of the rotation direction of the other motor). Defaults to 0.
+                turning_offset (int): Offset used to calculate the angle. Defaults to 0.
+                preparation_time (float): Waiting time in milliseconds before sending the ultrasound pulse.
+                impuls_length (float): Length of the ultrasound pulse.
+                timeout (float): waiting time before stopping the measurement in form of the maximum measurement duration.
+                references (list, optional): List of floats to use as references. Defaults to [300, 300, 300, 300].
+        
+        """
         super().__init__(forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout)
         self._infrared = Infrared(references)
-        
-        print(self._infrared.read_analog())
     
-    def _read_analog(self, timestamp = None):
+    def _read_analog(self, timestamp : float = None) -> list:
+        """Reads the analog values of the infrared sensors, store the values in the data storage and returns it.
+
+            Args:
+                timestamp (float): Timestamp with which all values are stored. Default: None
+            
+                Returns:
+                    list: Analog values of the infrared sensor
+        """
         infrared_data_analog = self._infrared.read_analog()
         for i, v in enumerate(infrared_data_analog):
             self._datastorage.add_data(f'infrared_analog_{i}', infrared_data_analog[i], timestamp)
         return infrared_data_analog
     
-    def _read_digital(self, timestamp = None):
+    def _read_digital(self, timestamp = None) -> list:
+        """Reads the digital values of the infrared sensors, store the values in the data storage and returns it.
+
+            Args:
+                timestamp (float): Timestamp with which all values are stored. Default: None
+            
+                Returns:
+                    list: Digital values of the infrared sensor
+        """
         infrared_data_digital = self._infrared.read_digital()
         for i, v in enumerate(infrared_data_digital):
             self._datastorage.add_data(f'infrared_data_digital{i}', infrared_data_digital[i], timestamp)
         return infrared_data_digital
     
-    def driving_mode_5(self):
+    def driving_mode_5(self) -> None:
+        """Driving mode 5.
+
+            The car follows a black line. As soon as it leaves the line, the car stops.
+        """
         t = time.time()
         while ((time.time() - t) < 60) and not self.stop_event.is_set():
             timestamp = time.time()
             infrared_data_analog = self._read_analog(timestamp)
             infrared_data_digital = self._read_digital(timestamp)
             infrared_data_min = min(infrared_data_analog)
-            print("p1", infrared_data_analog)
             if infrared_data_min < 40:
                 break
             if self.stop_event.wait(0.5): return
@@ -380,14 +410,19 @@ class SensorCar(SonicCar):
         self.stop()
         self.driving_mode_cancel = False
 
-    def driving_mode_6(self):
+    def driving_mode_6(self) -> None:
+        """Driving mode 6.
+
+            The car follows a solid black line.
+            If the car leaves the line, for example in a curve, it reverses back onto the line with maximum steering lock.
+            Afterwards, the car follows the line again.
+        """
         t = time.time()
         while ((time.time() - t) < 60) and not self.stop_event.is_set():
             timestamp = time.time()
             infrared_data_analog = self._read_analog(timestamp)
             infrared_data_digital = self._read_digital(timestamp)
             infrared_data_min = min(infrared_data_analog)
-            print("p1", infrared_data_analog)
             if infrared_data_min < 50:
                 break
             if self.stop_event.wait(0.5): return
@@ -395,7 +430,6 @@ class SensorCar(SonicCar):
         t = time.time()
         t2 = time.time()
         while ((time.time() - t) < 5) and not self.stop_event.is_set():
-            print(t, t2)
             timestamp = time.time()
             infrared_data_analog = self._read_analog(timestamp)
             infrared_data_digital = self._read_digital(timestamp)
@@ -418,7 +452,6 @@ class SensorCar(SonicCar):
             elif min_value_pos == 0:
                 self.drive(45, 45)
             if self.stop_event.wait(0.1): return
-            print(min_value_pos)
             if (time.time() - t2) > 1:
                 if self.direction == 1:
                     if self.steering_angle > 90:
@@ -430,7 +463,14 @@ class SensorCar(SonicCar):
  
         pass
 
-    def driving_mode_7(self):
+    def driving_mode_7(self) -> None:
+        """Driving mode 6.
+
+            The car follows a solid black line.
+            If the car leaves the line, for example in a curve, it reverses back onto the line with maximum steering lock.
+            Afterwards, the car follows the line again.
+            If an obstacle is detected, the car stops immediately.
+        """
         t = time.time()
         while ((time.time() - t) < 60) and not self.stop_event.is_set():
             timestamp = time.time()
@@ -446,7 +486,6 @@ class SensorCar(SonicCar):
         t2 = time.time()
         t3 = time.time()
         while ((time.time() - t) < 5) and not self.stop_event.is_set():
-            print(t, t2)
             timestamp = time.time()
             infrared_data_analog = self._read_analog(timestamp)
             infrared_data_digital = self._read_digital(timestamp)
@@ -469,7 +508,6 @@ class SensorCar(SonicCar):
             elif min_value_pos == 0:
                 self.drive(45, 45)
             if self.stop_event.wait(0.1): return
-            print(min_value_pos)
             if (time.time() - t2) > 1:
                 if self.direction == 1:
                     if self.steering_angle > 90:
@@ -479,7 +517,6 @@ class SensorCar(SonicCar):
                     else:
                         self.drive(-30, 90)
             if (time.time() - t3) > 0.1:
-                print("kkkk")
                 t3 = time.time()
                 distance = self.get_distance()
                 print(distance, "jdkljkdljkldskjlfkdlsökgföldksjm")
@@ -492,7 +529,12 @@ class SensorCar(SonicCar):
                     return
             
     
-    def _driving_mode_dash(self, mode):
+    def _driving_mode_dash(self, mode : str) -> None:
+        """Calls up the desired driving mode that is being transferred.
+
+            Args:
+                mode (str): The desired driving mode
+        """
         print("_driving_mode_dash", mode)
         if mode == "driving_mode_1":
             self.driving_mode_1()
@@ -509,11 +551,13 @@ class SensorCar(SonicCar):
         elif mode == "driving_mode_7":
             self.driving_mode_7()
         
-    def driving_mode_dash(self, mode):
-        print("driving_mode_dash", mode)
-        #print("läuft noch", self.thread.is_alive())
+    def driving_mode_dash(self, mode) -> None:
+        """Used to call the desired driving mode via threads.
+
+            Args:
+                mode (str): The desired driving mode
+        """
         if self.thread and self.thread.is_alive():
-            print("trhread läugft noch")
             return
         self.thread = threading.Thread(target=self._driving_mode_dash, args=(mode, ))
         self.thread.start()
