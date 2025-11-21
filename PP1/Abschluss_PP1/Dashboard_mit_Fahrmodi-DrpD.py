@@ -101,11 +101,11 @@ app.layout = html.Div([                                                         
                             value=None,                                                                   #Startwert bzw defaultwert
                             placeholder="Fahrmodus auswählen",
                             clearable=False,
-                            style={"width": "250px"}),                                                     #Breite definieren 
+                            style={"width": "250px"}),                                                    #Breite definieren 
                             html.Div(id="fahrmodus_status"), 
                         ],                                                                                                    
-                            style={"display": "flex",                                                        # Ausrichtungs Art flex-start Links , flex-endEnd rechts
-                                   "justifyContent": "flex-start",                                           # ➜ nach links ausrichten
+                            style={"display": "flex",                                                     # Ausrichtungs Art flex-start Links , flex-endEnd rechts
+                                   "justifyContent": "flex-start",                                        # ➜ nach links ausrichten
                                     "marginBottom": "8px"},
                         ),
                         # Ausrichtung längsausrichtung der Kacheln über dbc 6x6 Feldgröße
@@ -161,12 +161,13 @@ app.layout = html.Div([                                                         
 
 @app.callback(                                                                      # callback Fahrmodus
 
-    Output("fahrmodus_status", "children"),                                          # Children muss angegeben werden damit der Output funktioniert
+    Output("fahrmodus_status", "children"),                                         # Children muss angegeben werden damit der Output funktioniert
+    Output("drpd-1", "value"),                                                      #drpd-1 zusätzlich als Output, damit er resetet werden kann, sondt ist der gleiche Fahrmodus nicht zweimal hintereinander aufrufbar
     Input("drpd-1", "value"),
-    prevent_initial_call=True,                                                       #Nicht den ersten Wert verwenden Bsp. Überschrift als Platzhalter 
+    prevent_initial_call=True,                                                      #Nicht den ersten Wert verwenden Bsp. Überschrift als Platzhalter 
 )
 
-def start_fahrmodus(value):                                                          # Nicht Updaten wenn Funktion aktiv ist
+def start_fahrmodus(value):                                                         # Nicht Updaten wenn Funktion aktiv ist
 
     if value is None or value == "0":
         raise PreventUpdate                                                         # Nicht Updaten wenn Funktion aktiv ist
@@ -178,7 +179,10 @@ def start_fahrmodus(value):                                                     
     t = threading.Thread(target=run_mode, args=(fmod, x), daemon=True)
     t.start()
 
-    return f"Fahrmodus {fmod} gestartet."
+    status_text = f"Fahrmodus {fmod} gestartet."
+
+    
+    return status_text, None                                            # Ausgabe infor Fahrmodus gestartet, Zweiter Rückgabewert: Dropdown wieder leeren (damit derselbe Fahrmodus später erneut gewählt werden kann)                                               
 
 
 @app.callback(		                                                    #Callbackfunktion Dropdown

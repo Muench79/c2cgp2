@@ -707,13 +707,13 @@ def run_mode(fmod: int, x: SensorCar):
                 x.drive(30, x.min_left_angle)
                 x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())    
             elif _index == 0:
-                x.drive(20, x._frontwheels._min_angle)
+                x.drive(22, x._frontwheels._min_angle)
                 x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
             elif _index == 3:
                 x.drive(30, x.min_right_angle)
                 x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
             elif _index  == 4:
-                x.drive(20, x._frontwheels._max_angle)
+                x.drive(22, x._frontwheels._max_angle)
                 x._data_storage.add_data(x.speed, x.steering_angle, x.direction, x.tc_dist(), x.analog())
             
             if time.time() - start_zeit >=zeitgrenze:
