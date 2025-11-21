@@ -17,7 +17,7 @@ def load_data():
        Gibt einen DataFrame zurück (kann auch leer sein)."""
     if not os.path.exists("data_storage.csv") or os.path.getsize("data_storage.csv") == 0:      #Abfragen, ob data_storage.csv existiert oder ob sie leer ist
         print("⚠️ data_storage.csv fehlt oder ist leer – Dashboard bleibt unverändert.")
-        return pd.DataFrame(columns=[
+        return pd.DataFrame(columns=[                                                           # verlässt Funktion sofort--> nachfolgende Codezeilen werden nicht durchlaufen
             "timestamp", "speed", "steering_angle", "direction", "ultrasonic", "Infrared"       #leeres Dataframe erzeugen
         ])
 
@@ -50,15 +50,15 @@ total_time = s["timestamp"].iloc[-1] - s["timestamp"].iloc[0] # -1 letzte Wert i
 
 # Formatierung für Zeiteiheit in Sekunden
 def fmt(v, unit=""):
-    return f"{v:.2f}{(' ' + unit) if unit else ''}"
+    return f"{v:.2f}{(' ' + unit) if unit else ''}"                                         # f"{v:.2f}" → formatiert v auf 2 Dezimalstellen / + unit) if unit else  sagt, dass nur einheit angehängt werden soll wenn unit nicht leer ist
 
 def fmt_time(sec):
-    sec = float(sec)
-    m, s = divmod(int(round(sec)), 60)
-    h, m = divmod(m, 60)
+    sec = float(sec)                                                                        #Umwandlung in float zur Sicherheit
+    m, s = divmod(int(round(sec)), 60)                                                      #in sekunden umwandeln und runden dann in minuten und sekunden aufteilen
+    h, m = divmod(m, 60)                                                                    #in Stunden und Minuten spalten
     return f"{h:02d}:{m:02d}:{s:02d}"
-time_delta = Dashdf["timestamp"].max() - Dashdf["timestamp"].min()
-total_time_sec = time_delta.total_seconds()
+time_delta = Dashdf["timestamp"].max() - Dashdf["timestamp"].min()                          #max Zeitwert minus ersten Zeitwert
+total_time_sec = time_delta.total_seconds()                                                 #umwandlung in sekunden
 #print (total_time_sec)
 #print(fmt_time(total_time_sec))  # z.B. 00:00:20
 
@@ -112,8 +112,8 @@ app.layout = html.Div([                                                         
                         
                         dbc.Row([
                                 dbc.Col(html.Div([
-                                    html.Div("Min Speed [m/s]", style={"color": "#666", "fontSize": "14px"},),
-                                    html.H2(fmt(min_speed, "m/s"),id="kpi-1",style={"margin": "6px 0 0"},),], style=card_style,)),
+                                    html.Div("Min Speed [m/s]", style={"color": "#666", "fontSize": "14px"},),                          #Box Beschriftung und Format definieren
+                                    html.H2(fmt(min_speed, "m/s"),id="kpi-1",style={"margin": "6px 0 0"},),], style=card_style,)),      #Zahlenwert der Box hinzufügen und Formatieren
                                 dbc.Col(html.Div([
                                     html.Div("Max Speed [m/s]",style={"color": "#666", "fontSize": "14px"},),
                                     html.H2(fmt(max_speed, "m/s"),id="kpi-2",style={"margin": "6px 0 0"},),],style=card_style,)),
@@ -146,15 +146,15 @@ app.layout = html.Div([                                                         
                                                         {"label": "Fahrtrichtung [-]", "value": "direction"},
                                                         {"label": "Abstand z. Hinderniss [-]", "value": "ultrasonic"}, 
                                                             ],
-                                value="speed",                                          #Startwert bzw defaultwert
+                                value="speed",                                                                                  #Startwert bzw defaultwert
                                 clearable=False,
-                                style={"width": "250px"}),                              #Breite definieren
+                                style={"width": "250px"}),                                                                      #Breite definieren
                             style={"display": "flex",
-                                   "justifyContent": "flex-end",  # ➜ nach rechts schieben
+                                   "justifyContent": "flex-end",                                                                # ➜ nach rechts schieben
                                     "marginBottom": "8px"},
                             ),
                     dcc.Graph(id="gr-1",figure=fig),
-                    dcc.Interval(id="int-1", interval=5*1000, n_intervals=0)                           # Intervall einfügen, dass alle 5sec triggert (kein sichtbarer Inhalt)
+                    dcc.Interval(id="int-1", interval=5*1000, n_intervals=0)                           # Intervall , dass alle 5sec triggert (kein sichtbarer Inhalt)
                         ])
                     ])
 # Ende der Seite bzw. Formatdefinition
@@ -166,7 +166,7 @@ app.layout = html.Div([                                                         
     prevent_initial_call=True,                                                       #Nicht den ersten Wert verwenden Bsp. Überschrift als Platzhalter 
 )
 
-def start_fahrmodus(value):  # Nicht Updaten wenn Funktion aktiv ist
+def start_fahrmodus(value):                                                          # Nicht Updaten wenn Funktion aktiv ist
 
     if value is None or value == "0":
         raise PreventUpdate                                                         # Nicht Updaten wenn Funktion aktiv ist
@@ -237,7 +237,7 @@ if __name__ == "__main__":
 
     print("-------------------------------------------------")
     print(f"Dash-Server gestartet. Im Browser aufrufen über:")
-    print(f"  -> http://127.0.0.1:{8050}")
+    print(f"  -> http://127.0.0.1:{8050}")                                          #HTML-Adresse ausgeben unter der der Dash erreichbar ist.
     print(f"  oder (von anderem Gerät): http://<IP-deines-Rechners>:{8053}")
     print("-------------------------------------------------")
  	
