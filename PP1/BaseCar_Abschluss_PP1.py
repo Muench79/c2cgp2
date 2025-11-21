@@ -11,6 +11,7 @@ import json
 import os
 import sys
 import csv
+import inspect
 
 
 from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic, Infrared
@@ -18,24 +19,23 @@ from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic, Infrared
 # Die basisklassen.py wird nicht editiert!!
 # Notwendigen Klassen werden importiert und mit einem Hinweis versehen. 
 
-'''
+"""
 Import von Klassen aus der basisklassen.py
     > Nutzung der Classen front 
     > Zeile 226  
-    >class FrontWheels(object) 
+    > class FrontWheels(object) 
     > Lenkwinkel
     > Backwheels Zeile 309
     > class BackWheels(object): 
     > Steuert die Motoren an
-'''
-'''
+"""
+"""
 Einlesen config.sys
-   > Initiale Einlesung der config.jason für übergabe der Startwerte Lenkwinkel ggf. Drehrichtung Raeder
-'''
-
+   Initiale Einlesung der config.jason für übergabe der Startwerte Lenkwinkel ggf. Drehrichtung Raeder
+"""
 
 try:
-# Beginn einlesen config.json für Setzung Startwerte und Offsets
+    #Beginn einlesen config.json für Setzung Startwerte und Offsets
     with open("config.json", "r") as f:
         data = json.load(f)
         turning_offset = data["turning_offset"]
@@ -53,7 +53,7 @@ except:
 
 
 class data_storage():
-# Klasse data_storage zur Speicherung und Protokollierung der Fahrdaten in einer Log-File
+    ''' Klasse data_storage zur Speicherung und Protokollierung der Fahrdaten in einer Log-File'''
     def __init__(self): 
     # self wichtig um aus der Klasse ein Objekt machen mit eigener Speicherung in ein Dictionary welches einzelne Liste der Parameter enthält
         self.data_storage = {"timestamp":[],"speed":[], "steering_angle": [], "direction":[], "ultrasonic":[], "Infrared":[]}
@@ -69,7 +69,7 @@ class data_storage():
             self.data_storage["Infrared"].append(i)
 #        df = pd.Dataframe(self.data_storage)
     def add_data (self, speed, steering_angle, direction, ultrasonic, Infrared):
-    # add_Data fügt Daten in die jeweilgen Listen zur Speicherung des Log-Files 
+        """ add_Data fügt Daten in die jeweilgen Listen zur Speicherung des Log-Files"""
         self.data_storage["timestamp"].append(time.time())
         self.data_storage["speed"].append(speed)
         self.data_storage["steering_angle"].append(steering_angle)
@@ -77,7 +77,7 @@ class data_storage():
         self.data_storage["ultrasonic"].append(ultrasonic)
         self.data_storage["Infrared"].append(Infrared) 
     def save_log(self):
-    # Schreib die gespeicherten Daten aus dem Dict (mit Inhalt Listen in die Datei data_storage.csv)
+        ''' Schreib die gespeicherten Daten aus dem Dict (mit Inhalt Listen in die Datei data_storage.csv)'''
         df = pd.DataFrame.from_dict(self.data_storage)
         df.to_csv("data_storage.csv", index=False)
 
@@ -92,11 +92,16 @@ class data_storage():
 #        return Infrared.cali_references
 class BaseCar():
     '''
-    Klasse BaseCar wird erstellt und übernimmt die Werte forward_A,B turning_offset 
-    Anschließend werden die Objekte self._backwheels und self._frontwheels erstellt und 
-    verbknüpfen diese mit den Parametern forward_A,B und turning_offset
+        Klasse BaseCar wird erstellt und übernimmt die Werte forward_A,B turning_offset 
+        Anschließend werden die Objekte self._backwheels und self._frontwheels erstellt und 
+        verbknüpfen diese mit den Parametern forward_A,B und turning_offset
     '''
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
+        '''
+            Initierung der Parameter forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0)
+            aus den basisklassen.py
+            Setzung der Variablen für Lenkwinkel und direction als int
+        '''
         self._backwheels = BackWheels(forward_A, forward_B)
         self._frontwheels = FrontWheels(turning_offset)
         self._data_storage = data_storage()
@@ -146,28 +151,41 @@ class BaseCar():
             return self._direction  #Definition in Speed-Setter  
     
     def drive(self, new_speed : int = None , new_steering_angle : int = None ):
-        # Vorgabe der Geschwindigkeit und Lenkwinkel für späteren Funktionsaufruf in den Fahrmodi 
+        ''' Vorgabe der Geschwindigkeit und Lenkwinkel für späteren Funktionsaufruf in den Fahrmodi ''' 
         if not (new_speed is None):
             self.speed = new_speed
         if not (new_steering_angle is None):
             self.steering_angle = new_steering_angle
     
     def stop(self):
+        '''
+            Dient zum Stoppen der Fahrfunktion und zum geradeaus 90°stellen der Vorderräder
+        '''
         # Stoppfunktion setzt V=0 und Lenkwinkel auf 90°
         self._backwheels.stop()
         self.steering_angle = 90
 
 class SonicCar(BaseCar):
-    #Initialisierung Sonicar bezogen auf die Eltern-Klasse Basecar
-    #Implemntierung von <ultraschallsensoren aus der Ultrasonic Klasse aus basisklassen.py
+    '''
+        Initialisierung Sonicar bezogen auf die Eltern-Klasse Basecar
+        Implemntierung von <ultraschallsensoren aus der Ultrasonic Klasse aus basisklassen.py
+
+    '''
     def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
+       '''
+       Initialisierung der Parameter preparation_time: float , impuls_length: float  timeout: float 
+       Und Verbidung zu Ultrasonsic aus bassklassen.py für Mehodenzugriff
+
+       '''
        super().__init__(forward_A, forward_B, turning_offset)
        self.ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout) #Verbindung zu Ultrasonic aus Basisklassen
 #       
        
        
     def car_distance(self): 
-        #Distanz wird aus Berechnung der basisklasse Ultrasonis.py Zeile 45ff gebildet. 
+        '''
+            Distanz wird aus Berechnung der basisklasse Ultrasonis.py Zeile 45ff gebildet. 
+        '''
         for i in range(5):
             distance = self.ultrasonic.distance()  
             if distance < 0:
@@ -177,17 +195,22 @@ class SonicCar(BaseCar):
             print('{} : {} {}'.format(i, distance, unit))
             time.sleep(.5)   
     def tc_dist(self): 
-        #Methode zur Abstandsmeesung ohn Einheit wird erzeugt
+        '''
+            Methode zur Abstandsmessung ohne Einheit als int wird erzeugt und zurück gegeben
+        '''
         return self.ultrasonic.distance()
     
 class SensorCar(SonicCar):
     '''
-    Erzeugung der Klasse SensorCar auf Basis Elternklasse SonicCar 
-    Über super()._init__ werden die Parameter 
-    forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout initialisiert
-    Weiterhin wird die Methode rferences aus der basisklassen.py aus der Klasse Infrared überneommen
+        Erzeugung der Klasse SensorCar auf Basis Elternklasse SonicCar 
+        Über super()._init__ werden die Parameter 
+        forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout initialisiert
+        Weiterhin wird die Methode rferences aus der basisklassen.py aus der Klasse Infrared überneommen
     '''
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05, references: list = [300, 300, 300, 300, 300]):
+        '''
+            Auslesung Infrarotsensoren inkl. Sezung neuer Variable für Lenkwinkel 
+        '''
         super().__init__(forward_A, forward_B, turning_offset, preparation_time, impuls_length, timeout)
         self.infra_ref = Infrared(references) 
         self.min_right_angle = self._frontwheels._straight_angle + 20 #initalisierung minimaler Lenkwinkel für Ausweichmanöver
@@ -197,22 +220,27 @@ class SensorCar(SonicCar):
         self._min_analog_value = None # #Erzeugt einer Variablen für IR Abbruch soll dem max Wert im Array oder Liste findenbreak Bedingung
         
     def array(self):
-        # Gibt die IR Informationen als Liste / Array zurück
+        '''
+            Gibt die IR Informationen als Liste / Array zurück
+        '''
         print('{} : {}'.format(self.infra_ref.read_analog()))
         return self.infra_ref.read_analog()
     
     def cali_test(self):
-        #Calibrierunstest aus der bassisklassen.py Dient zur Voreinstellung der IR Werte am Potentiometer CAR
-        #Werte solltn ca. bei 50 liegen [50, 50, 50, 50, 50] für Fmod 7 und Fmod 8 siehe Fmod Beschreibung
+        '''
+            Calibrierunstest aus der bassisklassen.py Dient zur Voreinstellung der IR Werte am Potentiometer CAR
+            Werte solltn ca. bei 50 liegen [50, 50, 50, 50, 50] für Fmod 7 und Fmod 8 siehe Fmod Beschreibung
+        '''
         self.infra_ref.cali_references()
 
     def digital(self) -> list:
-        # List die IR Werte und gibt diese digital zurück 0 od. 1
-        """Reads the value of the infrared module as digital.
+        '''
+            List die IR Werte und gibt diese digital zurück 0 od. 1
+            Reads the value of the infrared module as digital.
 
         Returns:
             [list]: List of digitized measurement of the sensors using the reference as threshold.
-        """
+        '''
 
         new_analog = np.array(self.infra_ref.read_analog())
         new_digital = np.where(new_analog < self.infra_ref._references, 0, 1)
@@ -226,8 +254,10 @@ class SensorCar(SonicCar):
     
     
     def analog(self) -> list:
-        #Liefert die aktuellen IR - Werte und speichert ermittelt den Min, Max Wert sowie den Index(Position) des Min-Wet im Array
-        #_break_analaog_value für eine noch zu definierende Funktion aktuell nicht verwendet
+        '''
+            Liefert die aktuellen IR - Werte und speichert ermittelt den Min, Max Wert sowie den Index(Position) des Min-Wet im Array
+            _break_analaog_value für eine noch zu definierende Funktion aktuell nicht verwendet
+        '''
         new_analog = np.array(self.infra_ref.read_analog())
         self._min_analog_value = min(new_analog)
         min_analog_index = list(new_analog).index(self._min_analog_value) 
@@ -257,7 +287,9 @@ s=data_storage()
 #s.save_log() # Methode wird aufgerufen
 
 def run_mode(fmod: int, x: SensorCar): 
-# Methode zur Auswahl der Fahrmodi über die Dashboard.py 
+    '''
+        Methode zur Auswahl der Fahrmodi über die Dashboard.py 
+    '''
     start_zeit = time.time()
     zeitgrenze = 80  #ausführbare Funktion definieren, um im Dashboard aufzurufen 
     """ Es wäre auch möglich def run_mode(fmod, x): zu schreiben. Int und SensorCar sind nur Hinweise für den Programmierer dass fmod eine ganzzahl sein muss und x ein 
@@ -281,10 +313,10 @@ def run_mode(fmod: int, x: SensorCar):
 
     if fmod == 2:
         '''
-        Das Auto fährt 1 Sekunde geradeaus, dann für 8 Sekunden mit maximalen Lenkwinkel im Uhrzeigersinn und
-        stoppt. Dann soll das Auto diesen Fahrplan in umgekehrter Weise abfahren und an
-        den Ausgangspunkt zurückkehren. Die Vorgehensweise soll für eine Fahrt im entgegengesetzten
-        Uhrzeigersinn wiederholt werden.
+            Das Auto fährt 1 Sekunde geradeaus, dann für 8 Sekunden mit maximalen Lenkwinkel im Uhrzeigersinn und
+            stoppt. Dann soll das Auto diesen Fahrplan in umgekehrter Weise abfahren und an
+            den Ausgangspunkt zurückkehren. Die Vorgehensweise soll für eine Fahrt im entgegengesetzten
+            Uhrzeigersinn wiederholt werden.
         '''
         print('Fahrmodus 2 wird ausgeführt')
         # fahrmodus rechts
@@ -321,7 +353,7 @@ def run_mode(fmod: int, x: SensorCar):
 
     if fmod == 3:
         '''
-        Fahren bis ein Hindernis im Weg ist und dann stoppen.
+            Fahren bis ein Hindernis im Weg ist und dann stoppen.
         '''
         print('Fahrmodus 3 wird ausgeführt')
         x.drive(45, x._frontwheels._straight_angle)
@@ -345,7 +377,7 @@ def run_mode(fmod: int, x: SensorCar):
 
     if fmod == 4:
         '''
-        Fahrzeug variert die Geschwindigkeit in Abhängigkeit der Distanz und fährt bei Hinderniserkennung zurück mit max Lenkwinkel
+            Fahrzeug variert die Geschwindigkeit in Abhängigkeit der Distanz und fährt bei Hinderniserkennung zurück mit max Lenkwinkel
         '''
         start_zeit = time.time()
         print('Fahrmodus 4 wird ausgeführt')
@@ -391,8 +423,8 @@ def run_mode(fmod: int, x: SensorCar):
 
     if fmod == 5:
         '''
-        Linieverfolgung über Erkennung einer Linie mit großen Kurvenradien
-        Lösung über Auswertung Digitaler Signale der IR Sensoren (Fehleranfällig)
+            Linieverfolgung über Erkennung einer Linie mit großen Kurvenradien
+            Lösung über Auswertung Digitaler Signale der IR Sensoren (Fehleranfällig)
         '''
         x.drive(0, 100)
         #print(x.digital())
@@ -458,7 +490,8 @@ def run_mode(fmod: int, x: SensorCar):
         x._data_storage.save_log()  
 
     if fmod == 6:
-        '''Linieverfolgung über Erkennung einer Linie mit großen Kurvenradien
+        '''
+           Linieverfolgung über Erkennung einer Linie mit großen Kurvenradien
            Lösung über Auswertung Analoge Signale der IR Sensoren 
         '''
         x.drive(0, 100)
@@ -510,11 +543,11 @@ def run_mode(fmod: int, x: SensorCar):
 
     if fmod == 7:
         '''
-        Linieverfolgung über Erkennung einer Linie mit sehr engen Kurvenradien inkl. Korrekturfahrten Rückwärts
-        Lösung über Auswertung Analoger Signale der IR Sensoren 
-        Ermittlung eines Referenzwertes für die Verlassenserkennung der Linie 
-        IR Sensoren über den basisklassen IR Test Nummer 4 auf Werte um ca. 50 einstellen [50, 50, 50, 50, 50]
-        Einstellung über Potentiometer an der Sesorbar vom Auto (blauer Kasten)
+            Linieverfolgung über Erkennung einer Linie mit sehr engen Kurvenradien inkl. Korrekturfahrten Rückwärts
+            Lösung über Auswertung Analoger Signale der IR Sensoren 
+            Ermittlung eines Referenzwertes für die Verlassenserkennung der Linie 
+            IR Sensoren über den basisklassen IR Test Nummer 4 auf Werte um ca. 50 einstellen [50, 50, 50, 50, 50]
+            Einstellung über Potentiometer an der Sesorbar vom Auto (blauer Kasten)
         '''
         x.drive(0, 100)
         #print(x.digital())
@@ -592,12 +625,12 @@ def run_mode(fmod: int, x: SensorCar):
 
     if fmod == 8:
         '''
-        Linieverfolgung über Erkennung einer Linie mit sehr engen Kurvenradien inkl. Korrekturfahrten Rückwärts
-        Lösung über Auswertung Analoger Signale der IR Sensoren 
-        Ermittlung eines Referenzwertes für die Verlassenserkennung der Linie 
-        IR Sensoren über den basisklassen IR Test Nummer 4 auf Werte um ca. 50 einstellen [50, 50, 50, 50, 50]
-        Einstellung über Potentiometer an der Sesorbar vom Auto (blauer Kasten)
-        Zusätzlich sind die Ultraschallsensoren eingebunden damit vor einem Hindernis gestoppt wird
+            Linieverfolgung über Erkennung einer Linie mit sehr engen Kurvenradien inkl. Korrekturfahrten Rückwärts
+            Lösung über Auswertung Analoger Signale der IR Sensoren 
+            Ermittlung eines Referenzwertes für die Verlassenserkennung der Linie 
+            IR Sensoren über den basisklassen IR Test Nummer 4 auf Werte um ca. 50 einstellen [50, 50, 50, 50, 50]
+            Einstellung über Potentiometer an der Sesorbar vom Auto (blauer Kasten)
+            Zusätzlich sind die Ultraschallsensoren eingebunden damit vor einem Hindernis gestoppt wird
         '''
         x.drive(0, 100)
         wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
@@ -698,7 +731,29 @@ def run_mode(fmod: int, x: SensorCar):
    
 
 
-if __name__ == "__main__":                                                             
+if __name__ == "__main__":   
+
+    def print_all_docstrings(cls):
+        print(f"📘 Klasse: {cls.__name__}")
+        print(inspect.getdoc(cls) or "  (keine Docstring)\n")
+
+        for name, member in inspect.getmembers(cls):
+            if inspect.isfunction(member) or inspect.ismethod(member):
+                doc = inspect.getdoc(member)
+                print(f"🔹 Methode: {name}")
+                print(f"  {doc or '(keine Docstring)'}\n")
+            elif not name.startswith("__") and not inspect.isbuiltin(member):
+                doc = getattr(cls, name).__doc__
+                if doc:
+                    print(f"🔸 Attribut: {name}")
+                    print(f"  {doc}\n")
+
+
+    print_all_docstrings(BaseCar)
+    print_all_docstrings(SensorCar)
+    print_all_docstrings(SonicCar)
+    #sys.exit()
+
     # Konsolenausführung in if-Schleife kapseln, damit sie nicht vom Dash-Board aufgerufen werden kann
     #nur wenn das Skript direkt gestartet wird vergibt Python dem Modul den Namen __name__ == "__main__"
     #wird das Skript jedoch geladen setzt python __name__ == "BaseCar_ds_ir"  --> Konsolenausführung wird nicht aufgerufen
