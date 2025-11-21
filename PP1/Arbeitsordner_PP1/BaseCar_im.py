@@ -1,0 +1,333 @@
+#from DataStorage import DataStorage
+import click
+import time
+import numpy as np
+import math
+import RPi.GPIO as GPIO
+import smbus
+import json
+import os
+import sys
+import csv
+#
+start_zeit = time.time()
+zeitgrenze = 5
+datastorage_list = []
+data2 = []
+datastorageDict = {}
+from basisklassen import BackWheels, FrontWheels,PWM, Ultrasonic
+# Liest nur die ausgewählten Basisklassen ein
+#Die basisklassen.py wird nicht editiert
+#Notwendigen Klassen werden importiert und mit einem Hinweis versehen. 
+
+'''
+Nutzung der Classen front 
+Zeile 226  
+class FrontWheels(object) 
+Lenkwinkel
+Backwheels Zeile 309
+class BackWheels(object): 
+Steuert die Motoren an
+
+Initiale Einlesung der config.jason für übergabe der Startwerte Lenkwinkel ggf. Drehrichtung Raeder
+'''
+try:
+    with open("config.json", "r") as f:
+        data = json.load(f)
+        turning_offset = data["turning_offset"]
+        forward_A = data["forward_A"]
+        forward_B = data["forward_B"]
+        print("Daten in config.json:")
+        print(" - Turning Offset: ", turning_offset)
+        print(" - Forward A: ", forward_A)
+        print(" - Forward B: ", forward_B)
+except:
+    print("Keine geeignete Datei config.json gefunden!")
+    turning_offset = 0
+    forward_A = 0
+    forward_B = 0
+
+# Klasse BaseCar wird erstellt und ziehen uns die Werte forward_A,B turning_offset 
+# damit erstellen wir zwei Objekt self._backwheels und self._frontwheels und 
+# verbknüpfen diese mit den Parametern forward_A,B und turning_offset
+class BaseCar():
+    def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0):
+        self._backwheels = BackWheels(forward_A, forward_B)
+        self._frontwheels = FrontWheels(turning_offset)
+#        self._datastorage = DataStorage()
+        self._steering_angle = None # Selbstdefiniere Variable in der der Lenkwinkel gespeichert wird - Anfangbedingung None weil kein Winkel bekannt
+        self._direction = None # Selbstdefiniere Variable in der der Richtung gespeichert wird - Anfangbedingung None weil kein Richtung bekannt
+        print("OK")
+    
+#    @property
+#    def storage(self):
+#        return self._datastorage.storage
+    
+#    @storage.setter
+#    def storage(self, x : bool):
+#        self._datastorage.storage = x
+
+    @property
+    def speed(self):
+        return self._backwheels.speed #holt sich die aktuelle Geschw. von der Kl. backwheels und gibt diese zurück
+
+    @speed.setter
+    def speed(self, new_speed : int):
+        if new_speed < 0:
+            self._backwheels.backward()
+            self._direction = -1 #Wenn die geschw. negativ ist dann wird self._direction auf -1 gesetzt für spätere Richtungserkennung sinnvoll
+        else: 
+            self._backwheels.forward()
+            self._direction = 1
+        if new_speed > 100:
+            new_speed = 100
+        elif new_speed < -100:
+            new_speed = -100
+            #self._datastorage.adddata('speed', new_speed)
+        self._backwheels.speed = abs(new_speed) #negative Werte der geschwindigkeit werden pos. gespeichert - Vorbereitung Datastorage
+
+    @property
+    def steering_angle(self):
+        return self._steering_angle #Ausgabe aktueller Lenkwinkel Variable ist selbt gewählt siehe Zeile 53
+    
+    @steering_angle.setter
+    def steering_angle(self, new_steering_angle):
+        self._steering_angle = self._frontwheels.turn(new_steering_angle)
+#        self._datastorage.adddata('steering_angle', new_steering_angle)
+        print(self._steering_angle)
+
+    @property
+    def direction(self):
+        if self._backwheels.speed == 0: #Richtungsrückgabe wenn Geschw. =0 ist die Richtung 0 = stehen
+            return 0
+        else:
+            return self._direction  #Definition in Speed-Setter  
+    
+    def drive(self, new_speed : int = None , new_steering_angle : int = None ):
+        if not (new_speed is None):
+            self.speed = new_speed
+        if not (new_steering_angle is None):
+            self.steering_angle = new_steering_angle
+    
+    def stop(self):
+        self._backwheels.stop()
+        self.steering_angle = 90
+'''
+    def fahrmodus_1(self):
+        self.drive(30, 90)
+        time.sleep(3)
+        self.stop()
+        time.sleep(1)
+        self.drive(-30, 90)
+        time.sleep(3)
+        self.stop()
+
+    def fahrmodus_2(self):
+        self.drive(30, 90)
+        time.sleep(1)
+        self.drive(30, 135)
+        time.sleep(8)
+        self.drive(-30, 135)
+        time.sleep(8)
+        self.drive(-30, 90)
+        time.sleep(1)
+        self.stop()
+'''
+class SonicCar(BaseCar):
+    def __init__(self,forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
+       super().__init__(forward_A, forward_B, turning_offset)
+       self.ultrasonic = Ultrasonic(preparation_time, impuls_length, timeout) #Verbindung zu Ultrasonic aus Basisklassen
+       self.datastorage_list = [] 
+       self.__datastorage_list = []
+       self.datastorage_list =  self.__datastorage_list
+       
+       
+    def car_distance(self): 
+        for i in range(5):
+            distance = self.ultrasonic.distance() #Distanz wird aus Berechnung der Basisklasse Ultrasonis Zeile 45ff gebildet. 
+            if distance < 0:
+                unit = 'Error'
+            else:
+                unit = 'cm'
+            print('{} : {} {}'.format(i, distance, unit))
+            time.sleep(.5)   
+    def tc_dist(self):
+        return self.ultrasonic.distance()
+    def __str__(self): # Rückgabewert von obj.__str__ festlegen
+        return f"Messdaten: speed {self.speed}, steering_angle {self.steering_angle}, direction {self.direction}, distance {self.ultrasonic}"
+    def addJourneyEintrag(self, speed, steering_angel, direction, ultrasonic):
+        print(speed, speed, steering_angel, direction, ultrasonic)
+        self.__datastorage.append(Journey(speed, steering_angel, direction, ultrasonic))
+        
+class Journey:
+    def __init__(self, speed, steering_angle, direction, distance):
+    #    self.datum = datetime.strptime(datum, '%d.%m.%Y')
+        self.speed = speed
+        self.steering_angle = steering_angle
+        self.direction = direction
+        self.ultrasonic = distance
+        
+
+#timestamp,speed,steering_angle,direction,distance
+# Datenaufzeichnung und Speicherung   
+x = SonicCar(forward_A, forward_B, turning_offset)
+x.car_distance()
+class datastorage(SonicCar):
+    def __init__(self, speed, steering_angle, direction, ultrasonic): 
+        super().__init__(speed,steering_angle, direction,ultrasonic)
+        self.data2=[]
+        header = ['speed','steering_angle','direction','distance']
+        with open('fahrdaten_1.csv', 'w', newline='', encoding='utf-8') as datei:
+            writer = csv.writer(datei, delimiter=',')
+            writer.writerow(header)
+
+#        datastorage = [{ x.speed , x.steering_angle, x.direction, x.ultrasonic}]
+    def add(self, speed, steering_angel, direction, ultrasonic):
+        self.data2.append({"speed":speed, "steering_angel":steering_angel, "direction":direction, "ultrasonic":ultrasonic})
+        with open('fahrdaten_1.csv', 'a', newline='', encoding='utf-8') as datei:
+            writer = csv.writer(datei, delimiter=',')
+            writer.writerow([speed, steering_angel, direction, ultrasonic],)
+s=datastorage(x.speed , x.steering_angle, x.direction, x.ultrasonic)    
+
+
+
+ #           for row in csvDaten:
+ #               datum, startort, zielort, kilometer_start, kilometer_ende, zweck, privatfahrt = row
+ #               fzg.addJourneyEintrag(datum, startort, zielort, kilometer_start, kilometer_ende, zweck, privatfahrt)
+ # Objekt muss für die Classe Datastorage erschaffen werden
+#s.add()
+#print(s)
+        
+        
+'''    
+        with open(f"fahrdaten_1.csv", "w", encoding="utf-8") as file:
+        file.write() 
+        # Kopfzeile schreiben
+        writer.writerow(header)
+'''
+   
+#x = BaseCar(forward_A, forward_B, turning_offset) #Ist die Intanz der Klasse BaseCar
+
+print('-- Waehle eine Fahrmodus aus--')
+print('1: = Fmod1: Vfw=low 3sec > stopp 1s > Vbw=low 3sec')
+print('2: = Fmod2: Vfw=low 1sec > 8sec max arg right > stopp > 8sec Vbw max arg right > Vbw=low 1sec > repeat to left')
+print('3: = Fmod3: Vfw=low and stopp wenn distance <10cm stopp Vorwärtsfahrt bis Hindernis:')
+print('4: = Fmod4: Vfw = variabel bei Hinterniss max Lenkwinkel und zurück Erkundungstour')
+print('5: = Abbruch')
+while True:
+    try:
+        fmod = int(input("Bitte Fahrmodus eingeben: "))
+        break
+    except ValueError:
+        print("Bitte eine gültige Ganzzahl eingeben.")
+                          
+if fmod == 1:
+    print('Fahrmodus 1 wird ausgeführt')
+    x.drive(25)
+    s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
+    time.sleep(3)
+    x.drive(-25)  # uebergibt nur die Geschwindigkeit
+    time.sleep(3)
+    x.stop()
+
+if fmod == 2:
+    print('Fahrmodus 2 wird ausgeführt')
+    # fahrmodus rechts
+    x.drive(20) #
+    time.sleep(1)
+    x.drive(20, x._frontwheels._max_angle )  #[self._max_angle]???
+    time.sleep(8)
+    x.stop()
+    x.drive(-20, x._frontwheels._max_angle)
+    time.sleep(8)
+    x.drive(-20)
+    time.sleep(1)
+    x.stop()
+    # fahrmodus links
+    x.drive(20) #
+    time.sleep(1)
+    x.drive(20, x._frontwheels._min_angle)  #[self._max_angle]???
+    time.sleep(8)
+    x.stop()
+    x.drive(-20, x._frontwheels._min_angle)
+    time.sleep(8)
+    x.drive(-20)
+    time.sleep(1)
+    x.stop()
+
+if fmod == 3:
+    print('Fahrmodus 3 wird ausgeführt')
+    x.drive(45, x._frontwheels._straight_angle)
+    wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
+    w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
+    while True: 
+        d=x.tc_dist() #einlesen der distanz aus der Methode
+        print(d)
+        if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
+            pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
+        elif d < 10: 
+            w=w-1
+            if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
+                break
+        elif d >= 10: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
+            w=wd
+    print("Ende", d)
+    x.stop()
+
+if fmod == 4:
+    start_zeit = time.time()
+    print('Fahrmodus 4 wird ausgeführt')
+    x.drive(45, x._frontwheels._straight_angle)
+    s.add(x.speed, x.steering_angle, x.direction, x.ultrasonic)
+    wd=3 #Variable Anzahl der Unterschreitung der Bedingung distance < 10cm für break 
+    w=wd #zusätzliche Variable damit spätere Anzahl nur an einer Stelle geändert werden muss
+    while True: 
+        # Möglichkeit Schleife zu beenden
+        d=x.tc_dist() #einlesen der distanz aus der Methode
+        print(d)
+        if d in [-3,-4,-2]: # ignoriert Fehlerfall -3, -2, -4
+            pass #ignoriert bzw. mach nichts IF brauch die Anweisung pass
+        elif d >= 15: #Wenn >10 dann wird der "counter" neu auf ausgangswert wd in diesem bsp. 3 gesetzt
+            x.drive(45, x._frontwheels._straight_angle)
+            w=wd        
+        elif d in range(8, 15):
+ #           w=wd
+            x.drive(20, x._frontwheels._straight_angle)
+        elif d < 8: 
+            w=w-1
+            if w == 0: #Abbruch wenn w=0 bedeutet das 3mal der wert kleiner der Vorgabe d=10 erfolgt sind 
+                x.stop()
+                while x.tc_dist() < 10:
+                   time.sleep(2)
+                   x.drive(-25, x._frontwheels._max_angle) 
+                x.stop()
+                time.sleep(2)
+                x.drive(45, x._frontwheels._straight_angle)
+                print("Ende", d)
+        if time.time() - start_zeit >=zeitgrenze:
+            x.stop()
+            print("Exit")
+            break
+               
+if fmod == 5:
+    print('Abbruch')
+    sys.exit()
+
+while True:
+    try:
+        fmod = int(input("Für Abbruch Bitte die 5: "))
+        break
+    except ValueError:
+        print("Bitte eine gültige Ganzzahl eingeben.")
+   
+
+
+
+    
+
+
+
+
+   #   x._max_angle
+#print(turning_offset)
+#print(x._max_angle)

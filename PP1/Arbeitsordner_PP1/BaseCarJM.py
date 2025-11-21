@@ -1,4 +1,4 @@
-from basisklassen import BackWheels, FrontWheels
+from Abschluss_PP1.basisklassen import BackWheels, FrontWheels
 import time
 import json
 import os
