@@ -58,7 +58,7 @@ def fmt_time(sec):
     h, m = divmod(m, 60)                                                                    #in Stunden und Minuten spalten
     return f"{h:02d}:{m:02d}:{s:02d}"
 time_delta = Dashdf["timestamp"].max() - Dashdf["timestamp"].min()                          #max Zeitwert minus ersten Zeitwert
-total_time_sec = time_delta.total_seconds()                                                 #umwandlung in sekunden
+total_time_sec = time_delta.total_seconds()                                                 #Umwandlung in sekunden
 #print (total_time_sec)
 #print(fmt_time(total_time_sec))  # z.B. 00:00:20
 
