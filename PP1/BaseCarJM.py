@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 from basisklassen import BackWheels, FrontWheels, Ultrasonic, Infrared
 from DataStorage import DataStorage
 from time import sleep
@@ -10,68 +13,71 @@ import logging
 import time
 import threading
 import inspect
+import io
+import contextlib
 
-__version__ = "1.0.0b"
-
-# Logger erstellen
+# create logger
 logger = logging.getLogger()
-logger.setLevel(logging.CRITICAL)
+logger.setLevel(logging.DEBUG)
 
-# Handler für Konsole
+# create log handler
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.DEBUG)
 
-# Format definieren
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+# create format handler
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
+console_handler.setLevel(logging.DEBUG)
 
-# Handler hinzufügen
+# add handler
 logger.addHandler(console_handler)
 
 def log_message(level, message, **kwargs):
     # Format and generate log message
-    param_str = " | ".join(f"{key}={value}" for key, value in kwargs.items())
-    full_message = f"{message} | {param_str}" if param_str else message
+    param_str = ' | '.join(f'{key}={value}' for key, value in kwargs.items())
+    full_message = f'{message} | {param_str}' if param_str else message
 
-    if level == "DEBUG":
+    if level == 'DEBUG':
         logger.debug(full_message)
-    elif level == "INFO":
+    elif level == 'INFO':
         logger.info(full_message)
-    elif level == "WARNING":
+    elif level == 'WARNING':
         logger.warning(full_message)
-    elif level == "ERROR":
+    elif level == 'ERROR':
         logger.error(full_message)
-    elif level == "CRITICAL":
+    elif level == 'CRITICAL':
         logger.critical(full_message)
     else:
-        logger.info(f"Unbekannter Loglevel '{level}': {full_message}")
+        logger.info(f'Unbekannter Loglevel \'{level}\': {full_message}')
 
+# read config.json
 try:
-    with open("config.json", "r") as f:
+    with open('config.json', 'r') as f:
         data = json.load(f)
-        turning_offset = data["turning_offset"]
-        forward_A = data["forward_A"]
-        forward_B = data["forward_B"]
+        turning_offset = data['turning_offset']
+        forward_A = data['forward_A']
+        forward_B = data['forward_B']
     log_message('DEBUG', 'Read config.json: ' , data = data)
-    print("Daten in config.json:")
-    print(" - Turning Offset: ", turning_offset)
-    print(" - Forward A: ", forward_A)
-    print(" - Forward B: ", forward_B)
+    print('Daten in config.json:')
+    print(' - Turning Offset: ', turning_offset)
+    print(' - Forward A: ', forward_A)
+    print(' - Forward B: ', forward_B)
 except Exception as e:
     log_message('INFO', 'Read failed config.json : ' , error = e)
-    print("Keine geeignete Datei config.json gefunden!")
     turning_offset = 0
     forward_A = 0
     forward_B = 0
+
 
 class BaseCar():
     """A class for controlling a car.
 
         Attributes:
             VERSION (str): Version of the DataStorage class
-            __file_ext (tuple): Includes the supported file formats
             storage (bool): Activates data storage
     """
+    VERSION = '1.0.0b'
+
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0) -> None:
         """Initializes the BaseCar.
         
@@ -80,8 +86,9 @@ class BaseCar():
                 forward_B (int): 0,1 (Configuration of the rotation direction of the other motor). Defaults to 0.
                 turning_offset (int): Offset used to calculate the angle. Defaults to 0.
         """
-        __version__ = "1.0.0b"
-        log_message("DEBUG", 'Create BaseCar object')
+        
+        log_message('DEBUG', 'Create BaseCar object', VERSION = self.VERSION)
+        
         self._backwheels = BackWheels(forward_A, forward_B)
         self._frontwheels = FrontWheels(turning_offset)
         self._datastorage = DataStorage()
@@ -107,7 +114,10 @@ class BaseCar():
                     -5 (An error occurred while writing the file)
                     -6 (Unknown error (please contact support))
         """
-        return self._datastorage.save_data(path, format, overwrite)
+        
+        result = self._datastorage.save_data(path, format, overwrite)
+        log_message('DEBUG', 'Data has been saved', result = result)
+        return result
     
     @property
     def storage(self) -> bool:
@@ -127,6 +137,7 @@ class BaseCar():
                 x (bool): True - Data is recorded
                           False - Data is not recorded 
         """
+        log_message('DEBUG', 'Sets the data storage status', x = x)
         self._datastorage.storage = x
 
     @property
@@ -152,6 +163,8 @@ class BaseCar():
             new_speed = 100
         elif new_speed < -100:
             new_speed = -100
+
+        log_message('DEBUG', 'Sets the speed', new_speed = new_speed)
         self._datastorage.add_data('speed', new_speed)
         self._backwheels.speed = abs(new_speed)
 
@@ -168,9 +181,9 @@ class BaseCar():
     def steering_angle(self, new_steering_angle):
         """Sets the steering angle to the passed value.
         """
+        log_message('DEBUG', 'Sets the steering_angle', new_steering_angle = new_steering_angle)
         self._steering_angle = self._frontwheels.turn(new_steering_angle)
         self._datastorage.add_data('steering_angle', new_steering_angle)
-        print(self._steering_angle)
 
     @property
     def direction(self) -> int:
@@ -193,6 +206,7 @@ class BaseCar():
                 new_speed (int): New speed value
                 new_steering_angle (int): New steering angle
         """
+        log_message('DEBUG', 'Sets the driving parameters', new_speed = new_speed, new_steering_angle = new_steering_angle)
         if not (new_speed is None):
             self.speed = new_speed
         if not (new_steering_angle is None):
@@ -201,6 +215,7 @@ class BaseCar():
     def stop(self) -> None:
         """Stop the vehicle and straighten the steering wheel.
         """
+        log_message('DEBUG', 'Stop the journey')
         self._backwheels.stop()
         self.steering_angle = 90
 
@@ -213,13 +228,25 @@ class BaseCar():
             Then stop the car and driving mode 1 will end.
             The car should now have returned to the point where it started.
         """
-        self.drive(30, 90)
-        if self.stop_event.wait(3): return
+        driving_mode = 1
+        speed, steering_angle = 30, 90
+        self.drive(speed, steering_angle)
+        log_message('INFO', 'the journey has started', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+        if self.stop_event.wait(3):
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+            return
         self.stop()
-        if self.stop_event.wait(1): return
-        self.drive(-30, 90)
-        if self.stop_event.wait(3): return
+        if self.stop_event.wait(1):
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+            return
+        speed, steering_angle = -30, 90
+        self.drive(speed, steering_angle)
+        if self.stop_event.wait(3):
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+            return
         self.stop()
+        log_message('INFO', 'The journey has ended', driving_mode = driving_mode)
+        
 
     def driving_mode_2(self) -> None:
         """Driving mode 2.
@@ -230,19 +257,39 @@ class BaseCar():
             Finally, the vehicle reverses for one second with the steering wheel fully turned and then comes to a stop.
             The car should now have returned to the point where it started.
         """
-        self.drive(30, 90)
-        if self.stop_event.wait(1): return
-        self.drive(30, 135)
-        if self.stop_event.wait(8): return
-        self.drive(-30, 135)
-        if self.stop_event.wait(8): return
-        self.drive(-30, 90)
-        if self.stop_event.wait(1): return
+        driving_mode = 2
+        speed, steering_angle = 30, 90
+        self.drive(speed, steering_angle)
+        log_message('INFO', 'The journey has started', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+        if self.stop_event.wait(1):
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+            return
+        speed, steering_angle = 30, 135
+        self.drive(speed, steering_angle)
+        if self.stop_event.wait(8):
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+            return
+        speed, steering_angle = -30, 135
+        self.drive(speed, steering_angle)
+        if self.stop_event.wait(8):
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+            return
+        speed, steering_angle = -30, 90
+        self.drive(speed, steering_angle)
+        if self.stop_event.wait(1):
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+            return
         self.stop()
+        log_message('INFO', 'The journey has ended', driving_mode = driving_mode)
+
 
 class SonicCar(BaseCar):
     """A class for controlling a car and an ultrasonic sensor.
+        Attrinutes:
+            VERSION (str): Version of the DataStorage class
     """
+    VERSION = '1.0.0b'
+
     def __init__(self, forward_A: int = 0, forward_B: int = 0, turning_offset: int = 0, preparation_time: float = 0.01, impuls_length: float = 0.00001, timeout: float = 0.05):
         """Initializes the SonicCar.
 
@@ -270,6 +317,7 @@ class SonicCar(BaseCar):
                 int: Distance in cm for a single measurement. Negative values for errors.
         """
         distance = self._ultrasonic.distance()
+        log_message('INFO', 'the current distance', distance = distance)
         self._datastorage.add_data('distance', distance)
         return distance
     
@@ -284,6 +332,7 @@ class SonicCar(BaseCar):
     def clear_data(self):
         """Deletes all previously stored data
         """
+        log_message('INFO', 'the data storage was deleted')
         self._datastorage.clear_data()
 
     def driving_mode_3(self) -> None:
@@ -292,14 +341,23 @@ class SonicCar(BaseCar):
             The car is traveling straight ahead at a speed of 30.
             If an obstacle is detected via the ultrasonic sensor, it stops immediately.
         """
-        self.drive(30, 90)
+        driving_mode = 3
+        speed, steering_angle = 30, 90
+        self.drive(speed, steering_angle)
+        log_message('INFO', 'The journey has started', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
         while not self.stop_event.is_set():
             distance = self.get_distance()
             if distance in [-3, -4, -2]:
-                pass
+                log_message('DEGUG', 'Ultrasonic sensor error', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, distance = distance)
             elif distance < 10:
+                log_message('INFO', 'Obstacle detected', driving_mode = driving_mode, distance = distance, steering_angle = steering_angle)
                 break
+        if self.stop_event.is_set():
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, steering_angle = steering_angle)
+        else:
+            log_message('INFO', 'The journey has ended', driving_mode = driving_mode, steering_angle = steering_angle)
         self.stop()
+        log_message('INFO', 'The journey has ended', driving_mode = driving_mode)
 
     def driving_mode_4(self):
         """Driving mode 4.
@@ -309,18 +367,28 @@ class SonicCar(BaseCar):
             Then it continues its original journey.
             The journey will end automatically after 30 seconds.
         """
-        self.drive(30, 90)
+        driving_mode = 4
+        speed, steering_angle = 30, 90
+        self.drive(speed, steering_angle)
+        log_message('INFO', 'The journey has started', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
         t = time.time()
         while ((time.time() - t) < 30) and not self.stop_event.is_set():
             distance = self.get_distance()
             if distance in [-3, -4, -2]:
-                pass
+                log_message('DEGUG', 'Ultrasonic sensor error', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, distance = distance)
             elif distance < 10 and self.direction == 1:
-                self.drive(-30, 135)
+                speed, steering_angle = -30, 135
+                self.drive(speed, steering_angle)
+                log_message('INFO', 'Obstacle detected -> backward', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, distance = distance)
             elif distance > 10 and self.direction == -1:
-                self.drive(30, 90)
-            if self.stop_event.wait(0.1): return
+                speed, steering_angle = 30, 90
+                self.drive(speed, steering_angle)
+                log_message('INFO', 'Obstacle is gone -> forward', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, distance = distance)
+            if self.stop_event.wait(0.1):
+                log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+                return
         self.stop()
+        log_message('INFO', 'The journey has ended', driving_mode = driving_mode)
 
 class SensorCar(SonicCar):
     """A class for controlling a car, an ultrasonic sensor, and an infrared sensor.
@@ -374,6 +442,9 @@ class SensorCar(SonicCar):
 
             The car follows a black line. As soon as it leaves the line, the car stops.
         """
+        driving_mode = 5
+        speed, steering_angle = 30, 90
+        log_message('INFO', 'Line search has started', driving_mode = driving_mode)
         t = time.time()
         while ((time.time() - t) < 60) and not self.stop_event.is_set():
             timestamp = time.time()
@@ -382,9 +453,15 @@ class SensorCar(SonicCar):
             infrared_data_min = min(infrared_data_analog)
             if infrared_data_min < 40:
                 break
-            if self.stop_event.wait(0.5): return
-        self.drive(30, 90)
+            if self.stop_event.wait(0.5):
+                log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode)
+                return
+        
+        speed, steering_angle = 30, 90
+        self.drive(speed, steering_angle)
+        log_message('INFO', 'Line detected - start journey', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
         t = time.time()
+        min_value_pos_old = -2
         while ((time.time() - t)) < 3 and not self.stop_event.is_set():
             timestamp = time.time()
             infrared_data_analog = self._read_analog(timestamp)
@@ -394,21 +471,33 @@ class SensorCar(SonicCar):
             min_value_pos = infrared_data_analog.index(infrared_data_min) if infrared_data_min < 40 and count_threshold == 1 else -1
             print(min_value_pos, infrared_data_min)
             if min_value_pos == 4:
-                self.drive(30, 145)
+                speed, steering_angle = 30, 145
+                self.drive(speed, steering_angle)
             elif min_value_pos == 3:
-                self.drive(30, 112.5)
+                speed, steering_angle = 30, 113
+                self.drive(speed, steering_angle)
             elif min_value_pos == 2:
-                self.drive(30, 90)
+                speed, steering_angle = 30, 90
+                self.drive(speed, steering_angle)
             elif min_value_pos == 1:
-                self.drive(30, 67.5)
+                speed, steering_angle = 30, 68
+                self.drive(speed, steering_angle)
             elif min_value_pos == 0:
-                self.drive(30, 45)
-            if self.stop_event.wait(0.1): return
-            print(min_value_pos)
+                speed, steering_angle = 30, 45
+                self.drive(speed, steering_angle)
+            if min_value_pos_old != min_value_pos:
+                log_message('INFO', 'Follow the line', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog)
+                min_value_pos_old = min_value_pos
+            if self.stop_event.wait(0.1):
+                log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog)
+                return
             if infrared_data_min < 40:
                 t = time.time()
         self.stop()
-        self.driving_mode_cancel = False
+        if self.stop_event.is_set():
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+        else:
+            log_message('INFO', 'The journey has ended', driving_mode = driving_mode)
 
     def driving_mode_6(self) -> None:
         """Driving mode 6.
@@ -417,6 +506,8 @@ class SensorCar(SonicCar):
             If the car leaves the line, for example in a curve, it reverses back onto the line with maximum steering lock.
             Afterwards, the car follows the line again.
         """
+        driving_mode = 6
+        log_message('INFO', 'Line search has started', driving_mode = driving_mode)
         t = time.time()
         while ((time.time() - t) < 60) and not self.stop_event.is_set():
             timestamp = time.time()
@@ -425,10 +516,16 @@ class SensorCar(SonicCar):
             infrared_data_min = min(infrared_data_analog)
             if infrared_data_min < 50:
                 break
-            if self.stop_event.wait(0.5): return
-        self.drive(30, 90)
+            if self.stop_event.wait(0.5):
+                log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode)
+                return
+        speed, steering_angle = 30, 90
+        self.drive(speed, steering_angle)
+        log_message('INFO', 'Line detected - start journey', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
         t = time.time()
         t2 = time.time()
+        min_value_pos_old = -2
+        direction_old = -2
         while ((time.time() - t) < 5) and not self.stop_event.is_set():
             timestamp = time.time()
             infrared_data_analog = self._read_analog(timestamp)
@@ -442,49 +539,81 @@ class SensorCar(SonicCar):
                 t2 = time.time()
 
             if min_value_pos == 4:
-                self.drive(45, 145)
+                speed, steering_angle = 45, 145
+                self.drive(speed, steering_angle)
             elif min_value_pos == 3:
-                self.drive(45, 112.5)
+                speed, steering_angle = 45, 113
+                self.drive(speed, steering_angle)
             elif min_value_pos == 2:
-                self.drive(45, 90)
+                speed, steering_angle = 45, 90
+                self.drive(speed, steering_angle)
             elif min_value_pos == 1:
-                self.drive(45, 67.5)
+                speed, steering_angle = 45, 68
+                self.drive(speed, steering_angle)
             elif min_value_pos == 0:
-                self.drive(45, 45)
-            if self.stop_event.wait(0.1): return
+                speed, steering_angle = 45, 45
+                self.drive(speed, steering_angle)
+            
+            if direction_old != self.direction:
+                direction_old = self.direction
+                if self.direction == 1:
+                    log_message('INFO', 'Line found - forward', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog)
+            
+            if min_value_pos_old != min_value_pos:
+                log_message('INFO', 'Follow the line', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog)
+                min_value_pos_old = min_value_pos
+            if self.stop_event.wait(0.1):
+                log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog)
+                return
+            
             if (time.time() - t2) > 1:
                 if self.direction == 1:
                     if self.steering_angle > 90:
-                        self.drive(-30, 45)
+                        speed, steering_angle = -30, 45
+                        self.drive(speed, steering_angle)
                     elif self.steering_angle < 90:
-                        self.drive(-30, 135)
+                        speed, steering_angle = -30, 135
+                        self.drive(speed, steering_angle)
                     else:
-                        self.drive(-30, 90)
- 
-        pass
+                        speed, steering_angle = -30, 90
+                        self.drive(speed, steering_angle)
+                    log_message('INFO', 'The line was left - going backwards', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog)
+        
+        if self.stop_event.is_set():
+            log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
+        else:
+            log_message('INFO', 'Line was lost - the journey has ended', driving_mode = driving_mode)
 
     def driving_mode_7(self) -> None:
-        """Driving mode 6.
+        """Driving mode 7.
 
             The car follows a solid black line.
             If the car leaves the line, for example in a curve, it reverses back onto the line with maximum steering lock.
             Afterwards, the car follows the line again.
             If an obstacle is detected, the car stops immediately.
         """
+        driving_mode = 7
+        log_message('INFO', 'Line search has started', driving_mode = driving_mode)
         t = time.time()
         while ((time.time() - t) < 60) and not self.stop_event.is_set():
             timestamp = time.time()
             infrared_data_analog = self._read_analog(timestamp)
             infrared_data_digital = self._read_digital(timestamp)
             infrared_data_min = min(infrared_data_analog)
-            print("p1", infrared_data_analog)
             if infrared_data_min < 50:
                 break
-            if self.stop_event.wait(0.5): return
-        self.drive(30, 90)
+            if self.stop_event.wait(0.5):
+                log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode)
+            return
+        speed, steering_angle = 30, 90
+        self.drive(speed, steering_angle)
+        log_message('INFO', 'Line detected - start journey', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle)
         t = time.time()
         t2 = time.time()
         t3 = time.time()
+        min_value_pos_old = -2
+        direction_old = -2
+        distance = None
         while ((time.time() - t) < 5) and not self.stop_event.is_set():
             timestamp = time.time()
             infrared_data_analog = self._read_analog(timestamp)
@@ -492,40 +621,57 @@ class SensorCar(SonicCar):
             count_threshold = sum(1 for v in infrared_data_analog if v < 50)
             infrared_data_min = min(infrared_data_analog)
             min_value_pos = infrared_data_analog.index(infrared_data_min) if infrared_data_min < 40 and count_threshold == 1 else -1
-            print(min_value_pos, infrared_data_min)
             if count_threshold > 0:
                 t = time.time()
                 t2 = time.time()
 
             if min_value_pos == 4:
-                self.drive(45, 145)
+                speed, steering_angle = 45, 145
+                self.drive(speed, steering_angle)
             elif min_value_pos == 3:
-                self.drive(45, 112.5)
+                speed, steering_angle = 45, 113
+                self.drive(speed, steering_angle)
             elif min_value_pos == 2:
-                self.drive(45, 90)
+                speed, steering_angle = 45, 90
+                self.drive(speed, steering_angle)
             elif min_value_pos == 1:
-                self.drive(45, 67.5)
+                speed, steering_angle = 45, 68
+                self.drive(speed, steering_angle)
             elif min_value_pos == 0:
-                self.drive(45, 45)
-            if self.stop_event.wait(0.1): return
+                speed, steering_angle = 45, 45
+                self.drive(speed, steering_angle)
+            
+            if direction_old != self.direction:
+                direction_old = self.direction
+                if self.direction == 1:
+                    log_message('INFO', 'Line found - forward', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog, distance = distance)
+            if min_value_pos_old != min_value_pos:
+                log_message('INFO', 'Follow the line', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog, distance = distance)
+                min_value_pos_old = min_value_pos
+            if self.stop_event.wait(0.1):
+                log_message('INFO', 'The journey was cancelled', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog, distance = distance)
+                return
             if (time.time() - t2) > 1:
                 if self.direction == 1:
                     if self.steering_angle > 90:
-                        self.drive(-30, 45)
+                        speed, steering_angle = -30, 45
+                        self.drive(speed, steering_angle)
                     elif self.steering_angle < 90:
-                        self.drive(-30, 135)
+                        speed, steering_angle = -30, 135
+                        self.drive(speed, steering_angle)
                     else:
-                        self.drive(-30, 90)
+                        speed, steering_angle = -30, 90
+                        self.drive(speed, steering_angle)
+                    log_message('INFO', 'The line was left - going backwards', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog, distance = distance)
+            
             if (time.time() - t3) > 0.1:
                 t3 = time.time()
                 distance = self.get_distance()
-                print(distance, "jdkljkdljkldskjlfkdlsökgföldksjm")
                 if distance in [-3, -4, -2]:
-                    pass
+                    log_message('DEGUG', 'Ultrasonic sensor error', driving_mode = driving_mode, speed = speed, steering_angle = steering_angle, infrared_data_analog = infrared_data_analog, distance = distance)
                 elif distance < 10 and self.direction == 1:
-                    self.drive(0, 0)
-                    print("Hindernis erkannt")
                     self.stop()
+                    log_message('INFO', 'Obstacle detected - journey stopped', driving_mode = driving_mode)
                     return
             
     
@@ -535,20 +681,19 @@ class SensorCar(SonicCar):
             Args:
                 mode (str): The desired driving mode
         """
-        print("_driving_mode_dash", mode)
-        if mode == "driving_mode_1":
+        if mode == 'driving_mode_1':
             self.driving_mode_1()
-        elif mode == "driving_mode_2":
+        elif mode == 'driving_mode_2':
             self.driving_mode_2()
-        elif mode == "driving_mode_3":
+        elif mode == 'driving_mode_3':
             self.driving_mode_3()
-        elif mode == "driving_mode_4":
+        elif mode == 'driving_mode_4':
             self.driving_mode_4()
-        elif mode == "driving_mode_5":
+        elif mode == 'driving_mode_5':
             self.driving_mode_5()
-        elif mode == "driving_mode_6":
+        elif mode == 'driving_mode_6':
             self.driving_mode_6()
-        elif mode == "driving_mode_7":
+        elif mode == 'driving_mode_7':
             self.driving_mode_7()
         
     def driving_mode_dash(self, mode) -> None:
@@ -563,48 +708,52 @@ class SensorCar(SonicCar):
         self.thread.start()
 
 if __name__ == '__main__':
-    def print_all_docstrings(cls):
-        print(f"📘 Klasse: {cls.__name__}")
-        print(inspect.getdoc(cls) or "  (keine Docstring)\n")
+    """
+    try:
+        car = SensorCar(forward_A=forward_A, forward_B=forward_B, turning_offset=turning_offset)
+        car.driving_mode_5()
+    except:
+        car.stop()
+    sys.exit()
+    """
+    """
+    def print_all_docstrings(cls, fp):
+        # Klassenname und Klassendocstring
+        fp.write(f'📘 Klasse: {cls.__name__}\n')
+        fp.write(f'  {inspect.getdoc(cls) or "(keine Docstring)"}\n\n')
 
+        # Mitglieder der Klasse durchgehen
         for name, member in inspect.getmembers(cls):
             if inspect.isfunction(member) or inspect.ismethod(member):
+                # Methoden
                 doc = inspect.getdoc(member)
-                print(f"🔹 Methode: {name}")
-                print(f"  {doc or '(keine Docstring)'}\n")
-            elif not name.startswith("__") and not inspect.isbuiltin(member):
+                fp.write(f'🔹 Methode: {name}\n')
+                fp.write(f'  {doc or "(keine Docstring)"}\n\n')
+            elif not name.startswith('__') and not inspect.isbuiltin(member):
+                # Attribute (nur "normale", keine dunder)
                 doc = getattr(cls, name).__doc__
                 if doc:
-                    print(f"🔸 Attribut: {name}")
-                    print(f"  {doc}\n")
+                    fp.write(f'🔸 Attribut: {name}\n')
+                    fp.write(f'  {doc}\n\n')
 
+        # Datei öffnen mit UTF-8
+    with open('./doku.txt', "w", encoding="utf-8", errors="replace") as fp:
+        print_all_docstrings(BaseCar, fp)
+    """
+    # StringIO-Puffer anlegen
+    buffer = io.StringIO()
 
-    print_all_docstrings(BaseCar)
-    sys.exit()
-    print("Statrte")
-    car = SensorCar(forward_A, forward_B, turning_offset, references=[3,3,3,3,3])
-    car._driving_mode_dash("")
-    
-    car.thread.join()
-    
+    # help()-Ausgabe in den Puffer umleiten
+    with contextlib.redirect_stdout(buffer):
+        help(BaseCar)
 
-    #while car.thread.isAlive():
-    #    pass
-    #car.stop()
-    #car.storage = True
-    #car.driving_mode_1()
-    #car.drive(0,90)
-    #car.stop()
-    #car.save_data('./line_test.csv', overwrite=False)
-    print("ggggggggg")
-    sys.exit("7777")
-    car.fahrmodus_4()
-    car.stop()
-    #print(car.savedata('./data.csv'))
-    sys.exit()
-    sleep(3)
-        
+    # Inhalt als String abrufen
+    help_text = buffer.getvalue()
 
-        #print(car.getdata())
-    pprint.pprint(car.getdata())
-        #car = CarTest(BaseCar(forward_A, forward_B, turning_offset))
+    # Jetzt kannst du den Text weiterverwenden
+    print("=== Abgefangene Hilfe ===")
+    print(help_text)
+
+    # Beispiel: in eine Datei schreiben
+    with open("./hilfe.txt", "w", encoding="utf-8", errors="replace") as f:
+        f.write(help_text)
